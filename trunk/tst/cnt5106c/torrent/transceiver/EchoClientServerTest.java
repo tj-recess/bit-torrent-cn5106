@@ -1,7 +1,5 @@
 package cnt5106c.torrent.transceiver;
 
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 
 import org.junit.Test;
