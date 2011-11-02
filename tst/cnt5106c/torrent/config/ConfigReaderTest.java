@@ -3,7 +3,7 @@ package cnt5106c.torrent.config;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -82,14 +82,13 @@ public class ConfigReaderTest
     public void getPeerConfigTest() throws BadFileFormatException, IOException
     {
         ConfigReader reader = new ConfigReader(PEER_CONFIG_FILE_PATH);
-        List<PeerConfig> peerConfig = reader.getPeerConfigList();
+        Map<Integer, PeerConfig> peerConfig = reader.getPeerConfigList();
         
         if(peerConfig.size() != 1)
             Assert.fail();
         
-        PeerConfig aPeer = peerConfig.get(0);
-        if(aPeer.getPeerId() != PEER_ID
-                || !aPeer.getHostName().equals(HOST_NAME)
+        PeerConfig aPeer = peerConfig.get(PEER_ID);
+        if(!aPeer.getHostName().equals(HOST_NAME)
                 || aPeer.getListeningPort() != LISTENING_PORT
                 || aPeer.getHasFile() != true)
         {
