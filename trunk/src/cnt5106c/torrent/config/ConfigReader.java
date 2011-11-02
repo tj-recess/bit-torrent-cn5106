@@ -5,8 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ConfigReader
 {
@@ -24,14 +24,14 @@ public class ConfigReader
                 new FileInputStream(filePath)));
     }
 
-    public List<PeerConfig> getPeerConfigList() throws BadFileFormatException,
+    public Map<Integer, PeerConfig> getPeerConfigList() throws BadFileFormatException,
             IOException
     {
         if (this.fileReader == null)
         {
             throw new BadFileFormatException("Couldn't open the file");
         }
-        List<PeerConfig> peerConfigList = new ArrayList<PeerConfig>();
+        Map<Integer, PeerConfig> peerConfigMap = new HashMap<Integer, PeerConfig>();
         while (true)
         {
             String aLine = fileReader.readLine();
@@ -42,26 +42,25 @@ public class ConfigReader
             String[] tokens = aLine.split(" ");
             try
             {
-                fillTokens(tokens, peerConfigList);
+                fillTokens(tokens, peerConfigMap);
             } catch (Exception ex)
             {
                 throw new BadFileFormatException(ex.getMessage());
             }
         }
 
-        return peerConfigList;
+        return peerConfigMap;
     }
 
-    private void fillTokens(String[] tokens, List<PeerConfig> peersConfigList)
+    private void fillTokens(String[] tokens, Map<Integer, PeerConfig> peerConfigMap)
     {
         PeerConfig peerConfig = new PeerConfig();
-        peerConfig.setPeerId(Integer.parseInt(tokens[0]));
         peerConfig.setHostName(tokens[1]);
         peerConfig.setListeningPort(Integer.parseInt(tokens[2]));
         peerConfig.setHasFile(Integer.parseInt(tokens[3]) == 1 ? true : false);
 
         // add this peer to list
-        peersConfigList.add(peerConfig);
+        peerConfigMap.put(Integer.parseInt(tokens[0]),peerConfig);
     }
 
     public CommonConfig getCommonConfig() throws BadFileFormatException,

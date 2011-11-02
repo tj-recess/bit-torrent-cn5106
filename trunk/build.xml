@@ -1,0 +1,13 @@
+<project>
+
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="build/classes"/>
+        <javac srcdir="src" destdir="build/classes"/>
+        <javac classpath="junit.jar" srcdir="tst" destdir="build/classes"/>
+    </target>
+
+</project>
