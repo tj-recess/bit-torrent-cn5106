@@ -24,7 +24,7 @@ public class ConfigReader
                 new FileInputStream(filePath)));
     }
 
-    public Map<Integer, PeerConfig> getPeerConfigList() throws BadFileFormatException,
+    public Map<Integer, PeerConfig> getPeerConfigMap() throws BadFileFormatException,
             IOException
     {
         if (this.fileReader == null)

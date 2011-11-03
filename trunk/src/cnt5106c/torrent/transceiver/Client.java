@@ -19,7 +19,7 @@ public class Client implements Runnable
     private DataInputStream dis;
 	private String serverAddress;
 	private int serverPort;
-    private PipedOutputStream pipeOutputStream;
+    private PipedOutputStream pipedOutputStream;
 	
     /**
      * This ctor is generally used when this peer initiates the connection with other peers.
@@ -32,7 +32,7 @@ public class Client implements Runnable
 	{
 	    this.serverAddress = serverAddress;
 	    this.serverPort = serverPort;
-	    this.pipeOutputStream = new PipedOutputStream();
+	    this.pipedOutputStream = new PipedOutputStream();
 	    
 	    this.me = new Socket();
 	    this.me.connect(new InetSocketAddress(this.serverAddress, this.serverPort), TIMEOUT);
@@ -64,12 +64,12 @@ public class Client implements Runnable
 	{
 	    //always read first 4 bytes, then read equivalent to the length indicated by those 4 bytes
 	    int length = dis.readInt();
-	    pipeOutputStream.write(length);
+	    pipedOutputStream.write(length);
 	    
 	    //now read the data indicated by length and write it to buffer
 	    byte[] buffer = new byte[length];
 	    dis.read(buffer);
-	    pipeOutputStream.write(buffer);
+	    pipedOutputStream.write(buffer);
 	}
 	
 	public void talkOnSocket() throws IOException
@@ -134,5 +134,10 @@ public class Client implements Runnable
     public void sendHandshake() throws IOException
     {
         //TODO : send handshake message on dataOutputStream - dos
+    }
+
+    public PipedOutputStream getPipedOutputStream()
+    {
+        return this.pipedOutputStream;
     }
 }
