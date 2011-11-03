@@ -6,7 +6,7 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cnt5106c.torrent.messages.Message;
+import cnt5106c.torrent.peer.TorrentFile;
 import cnt5106c.torrent.config.PeerConfig;
 
 public class Transceiver
@@ -16,6 +16,7 @@ public class Transceiver
     private String myHostName;
     private int myListenerPort;
     private ConcurrentHashMap<Integer, Client> peerConnectionMap;
+    private TorrentFile myTorrentFile;
 
     /**
      * This ctor starts server immediately in the background on the listening port 
@@ -27,13 +28,15 @@ public class Transceiver
      * @throws UnknownHostException
      * @throws IOException
      */
-    public Transceiver(String myHostName, int myListenerPort, Map<Integer, PeerConfig> peerMap, int myPeerID) 
+    public Transceiver(Map<Integer, PeerConfig> peerMap, int myPeerID, TorrentFile myTorrentFile) 
         throws UnknownHostException, IOException
     {
-        this.myHostName = myHostName;
-        this.myListenerPort = myListenerPort;
+        PeerConfig myConfig = peerMap.get(myPeerID);
+        this.myHostName = myConfig.getHostName();
+        this.myListenerPort = myConfig.getListeningPort();
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
+        this.myTorrentFile = myTorrentFile;
         (new Thread(new Server(myHostName, myListenerPort))).start();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
         this.processPeerInfoMap();
@@ -54,47 +57,17 @@ public class Transceiver
                 //peer has already been started, try to make a connection
                 Client newClient = new Client(this.peerInfoMap.get(aPeerID).getHostName(),
                         this.peerInfoMap.get(aPeerID).getListeningPort());
+                //now start the thread for this client to start receiving stuff
+                (new Thread(newClient)).start();
+                //send handshake as we are trying to contact server
                 newClient.sendHandshake();
                 this.peerConnectionMap.put(aPeerID, newClient);
             }
         }
     }
-
-    /**
-     * This ctor starts server immediately in the background on the listening port supplied and localhost
-     * @param myListenerPort The port on which server should run
-     * @param peerInfoMap A Map of <PeerId, PeerInfo> which has all necessary information to connect to peers
-     * @throws UnknownHostException
-     * @throws IOException
-     */
-    public Transceiver(int myListenerPort, Map<Integer, PeerConfig> peerInfoMap, int myPeerID) 
-        throws UnknownHostException, IOException
-    {
-        this("localhost", myListenerPort, peerInfoMap, myPeerID);
-    }
     
-    /**
-     * sends a Message object (bytes) to peer on a TCP connection indicated by the peerId
-     * @param peerId The ID of peer as specified in PeerConfig.cfg file
-     * @param msg Message object which will be sent to peer
-     * @throws IOException If there is any issue with sending the data over network
-     */
-    public void sendMessage(int peerId, Message msg) throws IOException
+    public void reportPieceReceived(int peerID, int pieceID)
     {
-        Client client = this.peerConnectionMap.get(new Integer(peerId));
-        if (client == null)
-        {
-            PeerConfig peer = this.peerInfoMap.get(new Integer(peerId));
-            client = new Client(peer.getHostName(), peer.getListeningPort());
-            this.peerConnectionMap.put(new Integer(peerId), client);
-        }
-        //TODO: send message via client
-        
-    }
-    
-    public Message receiveMessage()
-    {
-        //TODO return message to sender
-        return null;
+        this.myTorrentFile.updatePeerPieceBitmap(peerID, pieceID);
     }
 }

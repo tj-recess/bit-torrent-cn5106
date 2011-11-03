@@ -82,7 +82,7 @@ public class ConfigReaderTest
     public void getPeerConfigTest() throws BadFileFormatException, IOException
     {
         ConfigReader reader = new ConfigReader(PEER_CONFIG_FILE_PATH);
-        Map<Integer, PeerConfig> peerConfig = reader.getPeerConfigList();
+        Map<Integer, PeerConfig> peerConfig = reader.getPeerConfigMap();
         
         if(peerConfig.size() != 1)
             Assert.fail();

@@ -1,21 +1,32 @@
 package cnt5106c.torrent.peer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import cnt5106c.torrent.config.CommonConfig;
 
 public class TorrentFile
 {
+    private final String fileName;
     private byte[] myFileBitmap;
-    private byte[][] peerPieceBitmap;
+    private Map<Integer, byte[]> peerIdToPieceBitmap;
     private List<Integer> preferredPeerIDList;
     private int optimisticallyUnchokedPeerID;
     
-    public TorrentFile(int fileSize, int pieceSize, int numTotalPeers, int numPreferredPeers)
+    public TorrentFile(CommonConfig myConfig, Set<Integer> peerConfigIDs)
     {
-        int totalPieces = fileSize/pieceSize;
+        this.fileName = myConfig.getFileName();
+        int totalPieces = myConfig.getFileSize()/myConfig.getPieceSize();   //assuming they are perfectly divisible
         this.myFileBitmap = new byte[totalPieces];
-        this.peerPieceBitmap = new byte[numTotalPeers][totalPieces];
-        this.preferredPeerIDList= new ArrayList<Integer>(numPreferredPeers);
+        this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
+        this.preferredPeerIDList= new ArrayList<Integer>(peerConfigIDs.size());
+        for(Integer aPeerID : peerConfigIDs)
+        {
+            this.peerIdToPieceBitmap.put(aPeerID, new byte[totalPieces]);
+        }
     }
     
     /**
@@ -37,14 +48,19 @@ public class TorrentFile
         //TODO:
     }
     
-    public byte[][] getPeerPieceBitmap()
+    public byte[] getPeerBitmap(int peerID)
     {
-        return peerPieceBitmap;
+        return this.peerIdToPieceBitmap.get(peerID);
     }
     
     public List<Integer> getPreferredPeerIDList()
     {
         return preferredPeerIDList;
+    }
+    
+    public String getFileName()
+    {
+        return fileName;
     }
 
     /**
