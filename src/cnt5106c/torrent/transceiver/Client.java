@@ -41,11 +41,6 @@ public class Client implements Runnable
         System.out.println("Client: connected to server now...");
 	}
 	
-	public Client() throws IOException
-	{
-	    this("localhost", 6789);
-	}
-	
 	public Client(Socket aSocket) throws IOException
 	{
 	    this.me = aSocket;

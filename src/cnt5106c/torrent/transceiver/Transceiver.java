@@ -37,7 +37,7 @@ public class Transceiver
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
         this.myTorrentFile = myTorrentFile;
-        (new Thread(new Server(myHostName, myListenerPort))).start();
+        (new Thread(new Server(myHostName, myListenerPort, myTorrentFile))).start();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
         this.processPeerInfoMap();
     }
@@ -57,17 +57,12 @@ public class Transceiver
                 //peer has already been started, try to make a connection
                 Client newClient = new Client(this.peerInfoMap.get(aPeerID).getHostName(),
                         this.peerInfoMap.get(aPeerID).getListeningPort());
-                //now start the thread for this client to start receiving stuff
-                (new Thread(newClient)).start();
-                //send handshake as we are trying to contact server
-                newClient.sendHandshake();
+                //now make an EventHandler (algorithm) for this client
+                EventManager anEventManager = new EventManager(newClient, myTorrentFile);
+                //start event manager before client starts any activity
+                (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);
             }
         }
-    }
-    
-    public void reportPieceReceived(int peerID, int pieceID)
-    {
-        this.myTorrentFile.updatePeerPieceBitmap(peerID, pieceID);
     }
 }
