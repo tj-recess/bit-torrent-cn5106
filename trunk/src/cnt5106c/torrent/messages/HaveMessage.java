@@ -1,16 +1,15 @@
 package cnt5106c.torrent.messages;
 
-public abstract class HaveMessage extends ActualMessage
+import java.io.IOException;
+
+import cnt5106.torrent.utils.Utilities;
+
+public abstract class HaveMessage extends PayloadMessage
 {
-	protected static final long serialVersionUID = 4L;
-	private int pieceIndex;
-	public HaveMessage (String msg)
-	{
-		// The payload contains a 4 byte piece index
-		pieceIndex = Integer.parseInt(msg.substring(5,9));
-	}
-	public int GetPieceIndex()
-	{
-		return pieceIndex;
-	}
+    private static final long serialVersionUID = 9L;
+
+    public HaveMessage(int pieceIndex) throws IOException, InterruptedException
+    {
+        super(MessageType.have, Utilities.getBytes(pieceIndex));
+    }
 };
