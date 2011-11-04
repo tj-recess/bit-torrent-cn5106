@@ -1,17 +1,18 @@
 package cnt5106c.torrent.messages;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 public abstract class HandshakeMessage extends Message
 {
 	protected static final long serialVersionUID = 2L;
-	private int peerId;
+	private static final String HANDSHAKE_MSG_HEADER = "CEN5501C2008SPRING";
 	
-	public HandshakeMessage(String msg)
+	public HandshakeMessage(int peerID) throws IOException
 	{
-		message = new String(msg);
-		peerId = Integer.parseInt(msg.substring(17,31));
-	}
-	public int GetPeerId()
-	{
-		return peerId;
+	    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	    baos.write(HANDSHAKE_MSG_HEADER.getBytes());
+	    baos.write(new byte[10]);  //10 bytes zero bits
+	    baos.write(peerID);
 	}
 };

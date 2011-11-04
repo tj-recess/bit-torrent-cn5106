@@ -1,25 +1,23 @@
 package cnt5106c.torrent.messages;
 
-public abstract class PieceMessage extends ActualMessage 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import cnt5106.torrent.utils.Utilities;
+
+public class PieceMessage extends PayloadMessage
 {
-	protected static final long serialVersionUID = 7L;
-	private int pieceIndex;
-	private String pieceData;
-	private int pieceDataLen;
+    private static final long serialVersionUID = 10L;
+
+    public PieceMessage(int pieceIndex, byte[] data) throws IOException, InterruptedException
+    {
+        super(MessageType.piece);
+        ByteArrayOutputStream baos = Utilities.getStreamHandle();
+        baos.write(super.message);
+        baos.write(pieceIndex);
+        baos.write(data);
+        super.message = baos.toByteArray();
+        Utilities.returnStreamHandle();
+    }
 	
-	public PieceMessage (String msg)
-	{
-		// The payload contains a 4 byte piece index
-		pieceIndex = Integer.parseInt(msg.substring(5,9));
-		pieceDataLen = length - 4;
-		pieceData = new String(msg.substring(9, 9+pieceDataLen));		
-	}	
-	public int GetPieceIndex()
-	{
-		return pieceIndex;
-	}
-	public String GetPieceData()
-	{
-		return pieceData;
-	}
 };

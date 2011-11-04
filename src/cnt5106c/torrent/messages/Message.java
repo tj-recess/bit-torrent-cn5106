@@ -3,23 +3,24 @@ package cnt5106c.torrent.messages;
 import java.io.Serializable;
 
 public abstract class Message implements Serializable {
-	protected String message;
+	protected byte[] message;
 	protected static final long serialVersionUID = 1L;
-	public Message () 
+	
+	/**
+	 * default constructor to enable subclasses to compute message before setting bytes
+	 */
+	public Message(){}
+	
+	public Message(byte[] msg)
 	{
-		
+		this.message = msg;
 	}
 	
-	public Message(String msg) 
-	{
-		// Copy the message
-		message = new String(msg);
-	}
-	public String GetMessage()
+	public byte[] getBytes()
 	{
 		return message;
 	}	
-};
+}
 
 // Derived classes:
 // HandshakeMessage
