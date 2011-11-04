@@ -4,19 +4,21 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PipedInputStream;
 
+import cnt5106c.torrent.peer.TorrentFile;
+
 /**
  * This class takes decision and action based on the events happening at client's receiving end.
  * @author arpit
  */
-public class Algorithm implements Runnable
+public class EventManager implements Runnable
 {
-    private Transceiver myTransceiver;
+    private TorrentFile myTorrentFile;
     private Client myClient = null;
     private DataInputStream dis = null;
     
-    public Algorithm(Transceiver aTransceiver, Client aClient) throws IOException
+    public EventManager(Client aClient, TorrentFile myTorrentFile) throws IOException
     {
-        this.myTransceiver = aTransceiver;
+        this.myTorrentFile = myTorrentFile;
         this.myClient = aClient;
         this.dis = new DataInputStream(new PipedInputStream(aClient.getPipedOutputStream()));
     }
@@ -26,6 +28,10 @@ public class Algorithm implements Runnable
     {
         try
         {
+            //start the thread for this client to start receiving stuff before sending anything
+            (new Thread(myClient)).start();
+            //send handshake as connection is already established
+            myClient.sendHandshake();
             this.readDataAndTakeAction();
         }
         catch (IOException e)
