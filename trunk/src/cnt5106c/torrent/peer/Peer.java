@@ -20,6 +20,13 @@ public class Peer
     private Map<String, CommonConfig> fileToCommonConfigMap = null;
     private final int myPeerID;
     
+    /**
+     * This constructor should be called through some main function which provides peerID as an argument
+     * so that peer can identify itself.
+     * @param myPeerID ID of the peer itself
+     * @throws BadFileFormatException if somebody has tampered with Config files
+     * @throws IOException If there is any issue while reading configuration (e.g. access rights, etc.)
+     */
     public Peer(int myPeerID) throws BadFileFormatException, IOException
     {
         this.myPeerID = myPeerID;
@@ -43,9 +50,9 @@ public class Peer
         this.fileToCommonConfigMap.put(myCommonConfig.getFileName(), myCommonConfig);
         ConfigReader peerConfigReader = new ConfigReader(peerConfigFileName);
         Map<Integer, PeerConfig> peerConfigMap = peerConfigReader.getPeerConfigMap();
+        this.fileToPeerConfigMap.put(myCommonConfig.getFileName(), peerConfigMap);
         //create torrent file for this config, pass it on to Transceiver
         TorrentFile aTorrentFile = new TorrentFile(myCommonConfig, peerConfigMap.keySet());
-        this.fileToPeerConfigMap.put(myCommonConfig.getFileName(), peerConfigMap);
         this.fileToTransceiverMap.put(myCommonConfig.getFileName(), new Transceiver(peerConfigMap, myPeerID, aTorrentFile));
     }
 }

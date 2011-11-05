@@ -11,6 +11,9 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
+import cnt5106c.torrent.messages.HandshakeMessage;
+import cnt5106c.torrent.messages.Message;
+
 public class Client implements Runnable
 {
     private static final int TIMEOUT = 5000;    //5 seconds
@@ -67,6 +70,13 @@ public class Client implements Runnable
 	    pipedOutputStream.write(buffer);
 	}
 	
+	void receive(int preknownDataLength) throws IOException
+	{
+	    byte[] buffer = new byte[preknownDataLength];
+	    dis.read(buffer);
+	    pipedOutputStream.write(buffer);
+	}
+	
 	public void talkOnSocket() throws IOException
 	{
 	    if(me == null)
@@ -103,10 +113,10 @@ public class Client implements Runnable
 	@Override
     public void run()
     {
-	    //first read the handshake message of 32 bytes, then keep reading until client dies
+	    //keep reading until client dies
+	    //TODO : know when to stop
         try
         {
-            this.receiveHandshake();
             while(true)
             {
                 this.receive();
@@ -117,18 +127,6 @@ public class Client implements Runnable
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-    }
-
-    private void receiveHandshake() throws IOException
-    {
-        byte[] buffer = new byte[32];   //fixed size message
-        dis.read(buffer);
-        //TODO : do something with buffer data
-    }
-    
-    public void sendHandshake() throws IOException
-    {
-        //TODO : send handshake message on dataOutputStream - dos
     }
 
     public PipedOutputStream getPipedOutputStream()

@@ -5,16 +5,35 @@ import java.io.IOException;
 
 import cnt5106.torrent.utils.Utilities;
 
-public abstract class ActualMessage extends Message
+public class ActualMessage extends Message
 {
 	protected static final long serialVersionUID = 2L;
+	private MessageType msgType = null;
+    private int msgLength;
 	
-	public ActualMessage(MessageType msgType) throws IOException, InterruptedException
+	public ActualMessage(MessageType msgType) throws InterruptedException, IOException
 	{
-		ByteArrayOutputStream baos = Utilities.getStreamHandle();
-		baos.write(4);    //length of msg type
-		baos.write(msgType.getMessageType());
-		super.message = baos.toByteArray();
-		Utilities.returnStreamHandle();
+		this(Integer.SIZE, msgType);
 	}
-};
+	
+	public ActualMessage(int msgLength, MessageType msgType) throws InterruptedException, IOException
+	{
+	    this.msgType = msgType;
+        this.msgLength = msgLength;
+        ByteArrayOutputStream baos = Utilities.getStreamHandle();
+        baos.write(Utilities.getBytes(this.msgLength));
+        baos.write(Utilities.getBytes(msgType.getMessageType()));
+        super.message = baos.toByteArray();
+        Utilities.returnStreamHandle();
+	}
+
+    public MessageType getMsgType()
+    {
+        return msgType;
+    }
+    
+    public int getMessageLength()
+    {
+        return this.msgLength;
+    }
+}

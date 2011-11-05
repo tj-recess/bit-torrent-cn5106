@@ -37,7 +37,7 @@ public class Transceiver
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
         this.myTorrentFile = myTorrentFile;
-        (new Thread(new Server(myHostName, myListenerPort, myTorrentFile))).start();
+        (new Thread(new Server(myHostName, myListenerPort, myTorrentFile, myPeerID))).start();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
         this.processPeerInfoMap();
     }
@@ -58,7 +58,7 @@ public class Transceiver
                 Client newClient = new Client(this.peerInfoMap.get(aPeerID).getHostName(),
                         this.peerInfoMap.get(aPeerID).getListeningPort());
                 //now make an EventHandler (algorithm) for this client
-                EventManager anEventManager = new EventManager(newClient, myTorrentFile);
+                EventManager anEventManager = new EventManager(newClient, myTorrentFile, myPeerID);
                 //start event manager before client starts any activity
                 (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);

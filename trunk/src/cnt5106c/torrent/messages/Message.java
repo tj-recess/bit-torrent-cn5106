@@ -19,7 +19,7 @@ public abstract class Message implements Serializable {
 	public byte[] getBytes()
 	{
 		return message;
-	}	
+	}
 }
 
 // Derived classes:
