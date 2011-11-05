@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import cnt5106.torrent.utils.Utilities;
 
-public abstract class HaveMessage extends PayloadMessage
+public class HaveMessage extends PayloadMessage
 {
     private static final long serialVersionUID = 9L;
 
