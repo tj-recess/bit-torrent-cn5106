@@ -3,6 +3,7 @@ package cnt5106c.torrent.transceiver;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PipedOutputStream;
@@ -10,9 +11,6 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-
-import cnt5106c.torrent.messages.HandshakeMessage;
-import cnt5106c.torrent.messages.Message;
 
 public class Client implements Runnable
 {
@@ -70,10 +68,11 @@ public class Client implements Runnable
 	    pipedOutputStream.write(buffer);
 	}
 	
-	void receive(int preknownDataLength) throws IOException
+	void receive(int preknownDataLength) throws EOFException, IOException
 	{
 	    byte[] buffer = new byte[preknownDataLength];
-	    dis.read(buffer);
+	    //using read fully here to completely download the data before placing it in buffer
+	    dis.readFully(buffer);
 	    pipedOutputStream.write(buffer);
 	}
 	

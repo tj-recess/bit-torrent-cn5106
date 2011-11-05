@@ -3,6 +3,7 @@ package cnt5106c.torrent.transceiver;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,7 +30,6 @@ public class Transceiver
      * @throws IOException
      */
     public Transceiver(Map<Integer, PeerConfig> peerMap, int myPeerID, TorrentFile myTorrentFile) 
-        throws UnknownHostException, IOException
     {
         PeerConfig myConfig = peerMap.get(myPeerID);
         this.myHostName = myConfig.getHostName();
@@ -37,8 +37,12 @@ public class Transceiver
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
         this.myTorrentFile = myTorrentFile;
-        (new Thread(new Server(myHostName, myListenerPort, myTorrentFile, myPeerID))).start();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
+    }
+    
+    public void takeAction() throws SocketTimeoutException, IOException
+    {
+        (new Thread(new Server(myHostName, myListenerPort, this))).start();
         this.processPeerInfoMap();
     }
     
@@ -58,11 +62,29 @@ public class Transceiver
                 Client newClient = new Client(this.peerInfoMap.get(aPeerID).getHostName(),
                         this.peerInfoMap.get(aPeerID).getListeningPort());
                 //now make an EventHandler (algorithm) for this client
-                EventManager anEventManager = new EventManager(newClient, myTorrentFile, myPeerID);
+                EventManager anEventManager = new EventManager(newClient, this);
                 //start event manager before client starts any activity
                 (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);
             }
         }
+    }
+    
+    public void sendMessageToGroup(List<Integer> peerIDList, byte[] data) throws IOException
+    {
+        for (Integer aPeerID : peerIDList)
+        {
+            this.peerConnectionMap.get(aPeerID).send(data);
+        }
+    }
+
+    public TorrentFile getTorrentFile()
+    {
+        return this.myTorrentFile;
+    }
+
+    public int getMyPeerID()
+    {
+        return this.myPeerID;
     }
 }
