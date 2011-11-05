@@ -14,7 +14,7 @@ public class PieceMessage extends PayloadMessage
         super(MessageType.piece);
         ByteArrayOutputStream baos = Utilities.getStreamHandle();
         baos.write(super.message);
-        baos.write(pieceIndex);
+        baos.write(Utilities.getBytes(pieceIndex));
         baos.write(data);
         super.message = baos.toByteArray();
         Utilities.returnStreamHandle();

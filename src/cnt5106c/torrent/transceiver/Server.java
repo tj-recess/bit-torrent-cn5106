@@ -6,20 +6,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import cnt5106c.torrent.peer.TorrentFile;
-
 public class Server implements Runnable
 {
     private ServerSocket serverSocket;
-    private TorrentFile myTorrentFile;
-    private int myPeerID;
+    private Transceiver myTransceiver;
     
-    public Server(String hostName, int port, TorrentFile myTorrentFile, int myPeerID) throws UnknownHostException, IOException
+    public Server(String hostName, int port, Transceiver myTransceiver) throws UnknownHostException, IOException
     {
         // 0 provided for backlog represents default value
         this.serverSocket = new ServerSocket(port, 0, InetAddress.getByName(hostName));
-        this.myTorrentFile = myTorrentFile;
-        this.myPeerID = myPeerID;
+        this.myTransceiver = myTransceiver;
     }
 
     @Override
@@ -35,7 +31,7 @@ public class Server implements Runnable
                 aClientSocket = this.serverSocket.accept();
                 System.out.println("Server received a client request!");
                 //start an Event manager in another thread for further communication
-                (new Thread(new EventManager(new Client(aClientSocket), myTorrentFile, myPeerID))).start();
+                (new Thread(new EventManager(new Client(aClientSocket), myTransceiver))).start();
             }
             catch (IOException e)
             {

@@ -1,5 +1,6 @@
 package cnt5106c.torrent.peer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -18,8 +19,10 @@ public class TorrentFile
     private int optimisticallyUnchokedPeerID;
     private List<Integer> piecesRequested;
     private List<Integer> interestedNeighbours;
+    private FileHandler myFileHandler;
+    private List<Integer> allPeerIDList;
     
-    public TorrentFile(CommonConfig myConfig, Set<Integer> peerConfigIDs)
+    public TorrentFile(CommonConfig myConfig, Set<Integer> peerConfigIDs, FileHandler myFileHandler)
     {
         this.fileName = myConfig.getFileName();
         int totalPieces = myConfig.getFileSize()/myConfig.getPieceSize();   //assuming they are perfectly divisible
@@ -32,15 +35,20 @@ public class TorrentFile
         {
             this.peerIdToPieceBitmap.put(aPeerID, new byte[totalPieces]);
         }
+        this.myFileHandler = myFileHandler;
+        allPeerIDList = new ArrayList<Integer>();
+        allPeerIDList.addAll(this.peerIdToPieceBitmap.keySet());
     }
     
     /**
-     * This method will update the piece map with the received piece id
+     * This method will update the piece map with the received piece id, store the piece on disk
      * @param pieceID the number of piece received
+     * @throws IOException If there is any issue while write data to disk
      */
-    public void addReceivedPieceToBitmap(int pieceID)
+    public void reportPieceReceived(int pieceID, byte[] pieceData) throws IOException
     {
-        //TODO:
+        myFileHandler.writePieceToFile(pieceID, pieceData);
+        this.updateBitmapWithPiece(myFileBitmap, pieceID);
     }
 
     public byte[] getMyFileBitmap()
@@ -53,19 +61,35 @@ public class TorrentFile
      * @param peerID ID of the peer from which this info has been received (the peer who sent have message)
      * @param pieceIndex the location of piece in the file
      */
-    public boolean updatePeerPieceBitmap(int peerID, int pieceIndex)
+    public void reportPeerPieceAvailablity(int peerID, int pieceIndex)
     {
         byte[] peerFileBitmap = this.peerIdToPieceBitmap.get(peerID);
+        updateBitmapWithPiece(peerFileBitmap, pieceIndex);
+    }
+    
+    /**
+     * Checks if the given piece index data is contained by us.
+     * @param pieceIndex The piece index which is being checked
+     * @return true if we have the piece data, false if we don't
+     */
+    public boolean doIHavePiece(int pieceIndex)
+    {
         int pieceLocation = pieceIndex / 8;
         int bitLocation = pieceIndex & 7;   // = pieceIndex % 8
-        peerFileBitmap[pieceLocation] |= (1 << bitLocation);
-        if((myFileBitmap[pieceLocation] & (1 << bitLocation)) == 0)  // == 0 means we don't have that piece
+        if((myFileBitmap[pieceLocation] & (1 << bitLocation)) != 0)  // == 0 means we don't have that piece
         {
             return true;
         }
         return false;
     }
-    
+
+    private void updateBitmapWithPiece(byte[] peerFileBitmap, int pieceIndex)
+    {
+        int pieceLocation = pieceIndex / 8;
+        int bitLocation = pieceIndex & 7;   // = pieceIndex % 8
+        peerFileBitmap[pieceLocation] |= (1 << bitLocation);
+    }
+
     public byte[] getPeerBitmap(int peerID)
     {
         return this.peerIdToPieceBitmap.get(peerID);
@@ -134,6 +158,11 @@ public class TorrentFile
         return false;
     }
 
+    /**
+     * Computes if there is any interesting piece with peerID mentioned
+     * @param myPeersID ID of the peer whose bitmap should be checked
+     * @return true if peer has any interesting piece, false, if no interesting piece was found
+     */
     public boolean hasInterestingPiece(int myPeersID)
     {
         final int len = myFileBitmap.length;
@@ -148,7 +177,7 @@ public class TorrentFile
         return false;
     }
 
-    public int getRequiredPieceFromPeer(int peerID)
+    public int getRequiredPieceIndexFromPeer(int peerID)
     {
         int desiredPieceID = -1;
         
@@ -183,5 +212,43 @@ public class TorrentFile
         //add this piece to requested piece list and return index
         this.piecesRequested.add(pieceIndex);
         return pieceIndex;
+    }
+
+    /**
+     * returns the data from the file on disk indicated by pieceIndex
+     * @param pieceIndex
+     * @return actual data from disk
+     * @throws IOException
+     */
+    public byte[] getPieceData(int pieceIndex) throws IOException
+    {
+        return myFileHandler.getPieceFromFile(pieceIndex);
+    }
+
+    /**
+     * returns list of all the peers participating in file transfer
+     * @return List of peer IDs
+     */
+    public List<Integer> getAllPeerIDList()
+    {
+        return allPeerIDList;
+    }
+
+    /**
+     * Computes list of those peers which don't have any interesting pieces left
+     * If all the peers have interesting data, returns a list with size 0
+     * @return List of peer IDs which don't have any interesting pieces
+     */
+    public List<Integer> getWastePeersList()
+    {
+        List<Integer> wastePeersList = new ArrayList<Integer>();
+        for(Integer peerID : allPeerIDList)
+        {
+            if(hasInterestingPiece(peerID))
+            {
+                wastePeersList.add(peerID);
+            }
+        }
+        return wastePeersList;
     }
 }

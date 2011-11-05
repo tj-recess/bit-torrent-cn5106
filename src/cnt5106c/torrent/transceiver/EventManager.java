@@ -8,10 +8,12 @@ import cnt5106.torrent.utils.Utilities;
 import cnt5106c.torrent.messages.ActualMessage;
 import cnt5106c.torrent.messages.BitfieldMessage;
 import cnt5106c.torrent.messages.HandshakeMessage;
+import cnt5106c.torrent.messages.HaveMessage;
 import cnt5106c.torrent.messages.InterestedMessage;
 import cnt5106c.torrent.messages.Message;
 import cnt5106c.torrent.messages.MessageType;
 import cnt5106c.torrent.messages.NotInterestedMessage;
+import cnt5106c.torrent.messages.PieceMessage;
 import cnt5106c.torrent.messages.RequestMessage;
 import cnt5106c.torrent.peer.TorrentFile;
 
@@ -27,13 +29,15 @@ public class EventManager implements Runnable
     private int myOwnID;
     private int myPeersID = -1;
     private boolean amIchoked = true;
+    private Transceiver myTransceiver;
     
-    public EventManager(Client aClient, TorrentFile myTorrentFile, int myOwnID) throws IOException
+    public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
     {
-        this.myTorrentFile = myTorrentFile;
+        this.myTransceiver = myTransceiver;
+        this.myTorrentFile = myTransceiver.getTorrentFile();
         this.myClient = aClient;
         this.dis = new DataInputStream(new PipedInputStream(aClient.getPipedOutputStream()));
-        this.myOwnID = myOwnID;
+        this.myOwnID = myTransceiver.getMyPeerID();
     }
     
     @Override
@@ -81,9 +85,8 @@ public class EventManager implements Runnable
         while(true)
         {
             //TODO : break this loop when done
-            
             ActualMessage msg = getNextMessage();
-            //TODO : now interpret the message and take action
+            //now interpret the message and take action
             takeAction(msg);
         }
     }
@@ -112,7 +115,7 @@ public class EventManager implements Runnable
             takeActionForRequestMessage();
             break;
         case piece:
-            takeActionForPieceMessage();
+            takeActionForPieceMessage(payloadLength);
             break;
         case bitfield:
             takeActionForBitFieldMessage(payloadLength);
@@ -138,25 +141,56 @@ public class EventManager implements Runnable
         }
     }
 
-    private void takeActionForPieceMessage()
+    /**
+     * Algorithm : 
+     * 0. report this received piece to Torrent file
+     * 1. check if you are still unchoked!
+     * 2. if yes, find any random piece which my peer has but I don't have
+     * 3. if found, and I am unchoked send request message
+     * 4. Notify others of this piece availability by sending have messages to everyone.
+     * @throws IOException for any error while reading the data from network
+     * @throws InterruptedException 
+     */
+    private void takeActionForPieceMessage(int msgLength) throws IOException, InterruptedException
     {
-        // TODO Auto-generated method stub
-        
-        //Algorithm : 
-        //1. check if you are still unchoked!
-        //2. if yes, find any random piece which my peer has but I don't have
-        //3. if found, send request message
-        //4. if piece not found or we are choked again, quit
-
-        
+        //retrieve the piece from pipe
+        //first retrieve the piece index
+        int pieceIndex = dis.readInt();
+        byte[] pieceData = new byte[msgLength - Integer.SIZE];  //subtracting the length of pieceIndex
+        dis.read(pieceData);
+        //store this pieceData in file
+        myTorrentFile.reportPieceReceived(pieceIndex, pieceData);
+        if(!amIchoked)
+        {
+            //send request for another piece
+            int desiredPiece = myTorrentFile.getRequiredPieceIndexFromPeer(myPeersID);
+            if(desiredPiece != -1)
+            {
+                myClient.send((new RequestMessage(desiredPiece)).getBytes());
+            }
+        }
+        //send have message to every one to notify about this piece received
+        myTransceiver.sendMessageToGroup(myTorrentFile.getAllPeerIDList(), (new HaveMessage(pieceIndex)).getBytes());
         //after receiving the piece check if you need to send not-interested message to any of the peers
-        
+        myTransceiver.sendMessageToGroup(myTorrentFile.getWastePeersList(), new NotInterestedMessage().getBytes());
     }
 
-    private void takeActionForRequestMessage()
-    {
-        // TODO Auto-generated method stub
-        
+    /**
+     * Algorithm:
+     * 1. read the requested piece index from pipe 
+     * 2. read data from that location in file
+     * 3. send the data to peer
+     * @throws IOException if there is an exception while read the data from file
+     * @throws InterruptedException
+     */
+    private void takeActionForRequestMessage() throws IOException, InterruptedException
+    {        
+        //1. we know that requested piece index is an integer
+        int pieceIndex = dis.readInt();
+        //2. now read this data from file.
+        byte[] dataForPiece = myTorrentFile.getPieceData(pieceIndex);
+        //3. send this data as piece packet to peer
+        myClient.send((new PieceMessage(pieceIndex, dataForPiece)).getBytes());
     }
 
     private void takeActionForHaveMessage(int msgLength) throws IOException, InterruptedException
@@ -166,8 +200,8 @@ public class EventManager implements Runnable
         dis.read(payload);
         //as we know that this payload is piece index, convert it and pass to torrent file
         int pieceIndex = Utilities.getIntegerFromByteArray(payload, 0);
-        
-        if(myTorrentFile.updatePeerPieceBitmap(myPeersID, pieceIndex))
+        myTorrentFile.reportPeerPieceAvailablity(myPeersID, pieceIndex);
+        if(!myTorrentFile.doIHavePiece(pieceIndex))
         {
             myClient.send((new InterestedMessage()).getBytes());
         }
@@ -179,27 +213,32 @@ public class EventManager implements Runnable
 
     private void takeActionForNotInterestedMessage()
     {
-        // TODO Auto-generated method stub
         //remove from interested neighbours list
+        myTorrentFile.reportNotInterestedPeer(myPeersID);
     }
 
     private void takeActionForInterestedMessage()
     {
-        // TODO Auto-generated method stub
         //add to interested neighbours list
+        myTorrentFile.reportInterestedPeer(myPeersID);
     }
 
     private void takeActionForUnchokeMessage() throws IOException, InterruptedException
     {
+        //first of all set the status that I am now unchoked
+        this.amIchoked = false;
         //select any piece which my peer has but I don't have and I have not already requested
-        int pieceIndex = myTorrentFile.getRequiredPieceFromPeer(myPeersID);
-        myClient.send((new RequestMessage(pieceIndex)).getBytes());
+        int pieceIndex = myTorrentFile.getRequiredPieceIndexFromPeer(myPeersID);
+        if(pieceIndex != -1)
+        {
+            myClient.send((new RequestMessage(pieceIndex)).getBytes());
+        }
     }
 
     private void takeActionForChokeMessage()
     {
-        // TODO Auto-generated method stub
-        
+        //set the status that I am choked now
+        this.amIchoked = true;
     }
 
     private void processHandshake(HandshakeMessage handshakeMsg) throws IOException, InterruptedException
