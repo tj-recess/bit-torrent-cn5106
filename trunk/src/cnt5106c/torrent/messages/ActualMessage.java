@@ -3,7 +3,7 @@ package cnt5106c.torrent.messages;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import cnt5106.torrent.utils.Utilities;
+import cnt5106c.torrent.utils.Utilities;
 
 public class ActualMessage extends Message
 {
