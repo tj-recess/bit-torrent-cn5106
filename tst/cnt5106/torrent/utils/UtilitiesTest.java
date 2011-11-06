@@ -3,6 +3,8 @@ package cnt5106.torrent.utils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import cnt5106c.torrent.utils.Utilities;
+
 
 public class UtilitiesTest
 {

@@ -1,4 +1,4 @@
-package cnt5106.torrent.utils;
+package cnt5106c.torrent.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;

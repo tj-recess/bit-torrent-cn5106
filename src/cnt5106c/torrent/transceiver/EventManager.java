@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PipedInputStream;
 
-import cnt5106.torrent.utils.Utilities;
 import cnt5106c.torrent.messages.ActualMessage;
 import cnt5106c.torrent.messages.BitfieldMessage;
 import cnt5106c.torrent.messages.HandshakeMessage;
@@ -16,6 +15,7 @@ import cnt5106c.torrent.messages.NotInterestedMessage;
 import cnt5106c.torrent.messages.PieceMessage;
 import cnt5106c.torrent.messages.RequestMessage;
 import cnt5106c.torrent.peer.TorrentFile;
+import cnt5106c.torrent.utils.Utilities;
 
 /**
  * This class takes decision and action based on the events happening at client's receiving end.
