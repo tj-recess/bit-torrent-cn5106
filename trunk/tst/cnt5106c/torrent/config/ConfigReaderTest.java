@@ -90,7 +90,7 @@ public class ConfigReaderTest
         PeerConfig aPeer = peerConfig.get(PEER_ID);
         if(!aPeer.getHostName().equals(HOST_NAME)
                 || aPeer.getListeningPort() != LISTENING_PORT
-                || aPeer.getHasFile() != true)
+                || aPeer.hasCompleteFile() != true)
         {
             Assert.fail();
         }

@@ -170,9 +170,9 @@ public class EventManager implements Runnable
             }
         }
         //send have message to every one to notify about this piece received
-        myTransceiver.sendMessageToGroup(myTorrentFile.getAllPeerIDList(), (new HaveMessage(pieceIndex)).getBytes());
+        myTransceiver.sendMessageToGroup(myTransceiver.getAllPeerIDList(), (new HaveMessage(pieceIndex)).getBytes());
         //after receiving the piece check if you need to send not-interested message to any of the peers
-        myTransceiver.sendMessageToGroup(myTorrentFile.getWastePeersList(), new NotInterestedMessage().getBytes());
+        myTransceiver.sendMessageToGroup(myTransceiver.getWastePeersList(), new NotInterestedMessage().getBytes());
     }
 
     /**
@@ -214,17 +214,18 @@ public class EventManager implements Runnable
     private void takeActionForNotInterestedMessage()
     {
         //remove from interested neighbours list
-        myTorrentFile.reportNotInterestedPeer(myPeersID);
+        myTransceiver.reportNotInterestedPeer(myPeersID);
     }
 
     private void takeActionForInterestedMessage()
     {
-        //add to interested neighbours list
-        myTorrentFile.reportInterestedPeer(myPeersID);
+        //add to interested neighbors list
+        myTransceiver.reportInterestedPeer(myPeersID);
     }
 
     private void takeActionForUnchokeMessage() throws IOException, InterruptedException
     {
+        //TODO:
         //first of all set the status that I am now unchoked
         this.amIchoked = false;
         //select any piece which my peer has but I don't have and I have not already requested
@@ -237,6 +238,7 @@ public class EventManager implements Runnable
 
     private void takeActionForChokeMessage()
     {
+        //TODO: 
         //set the status that I am choked now
         this.amIchoked = true;
     }

@@ -82,9 +82,13 @@ public class FileHandler
         return buffer;
     }
 
-    public static boolean createDirectory(String someDirectoryPath)
+    public static boolean createDirectoryIfNotExists(String someDirectoryPath)
     {
         File directory = new File(someDirectoryPath);
+        if(directory.exists())
+        {
+            return true;
+        }
         return directory.mkdir();
     }
 

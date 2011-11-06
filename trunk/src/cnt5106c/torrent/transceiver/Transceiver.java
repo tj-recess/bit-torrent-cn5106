@@ -3,21 +3,37 @@ package cnt5106c.torrent.transceiver;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import cnt5106c.torrent.peer.TorrentFile;
+import cnt5106c.torrent.config.CommonConfig;
 import cnt5106c.torrent.config.PeerConfig;
+import cnt5106c.torrent.messages.ChokeMessage;
+import cnt5106c.torrent.messages.UnchokeMessage;
+import cnt5106c.torrent.peer.TorrentFile;
 
 public class Transceiver
 {
+    final int NUM_PREFERRED_NEIGHBORS;
+    private final int UNCHOKING_INTERVAL;
+    private final int OPTIMISTIC_UNCHOKING_INTERVAL;
     private Map<Integer, PeerConfig> peerInfoMap;
     private int myPeerID;
     private String myHostName;
     private int myListenerPort;
     private ConcurrentHashMap<Integer, Client> peerConnectionMap;
     private TorrentFile myTorrentFile;
+    private Set<Integer> interestedNeighbours;
+    private List<Integer> allPeerIDList;
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
 
     /**
      * This ctor starts server immediately in the background on the listening port 
@@ -29,21 +45,33 @@ public class Transceiver
      * @throws UnknownHostException
      * @throws IOException
      */
-    public Transceiver(Map<Integer, PeerConfig> peerMap, int myPeerID, TorrentFile myTorrentFile) 
+    public Transceiver(CommonConfig myCommonConfig, Map<Integer, PeerConfig> peerMap, int myPeerID) throws IOException 
     {
         PeerConfig myConfig = peerMap.get(myPeerID);
         this.myHostName = myConfig.getHostName();
         this.myListenerPort = myConfig.getListeningPort();
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
-        this.myTorrentFile = myTorrentFile;
+        //create torrent file for this config, pass it on to Transceiver
+        this.myTorrentFile = new TorrentFile(myPeerID, myCommonConfig, peerMap.keySet(), myConfig.hasCompleteFile());
+        this.NUM_PREFERRED_NEIGHBORS = myCommonConfig.getNumPreferredNeighbours();
+        this.UNCHOKING_INTERVAL = myCommonConfig.getUnchokingInterval();
+        this.OPTIMISTIC_UNCHOKING_INTERVAL = myCommonConfig.getOptimisticUnchokingInterval();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
+        this.interestedNeighbours = new TreeSet<Integer>();
+        allPeerIDList = new ArrayList<Integer>();
+        //add all the peerIDs in allPeerIDList
+        allPeerIDList.addAll(this.peerInfoMap.keySet());
+        //initialize interested neighbors list with allPeerIDsList
+        this.interestedNeighbours.addAll(allPeerIDList);
     }
     
-    public void takeAction() throws SocketTimeoutException, IOException
+    public void start() throws SocketTimeoutException, IOException
     {
         (new Thread(new Server(myHostName, myListenerPort, this))).start();
         this.processPeerInfoMap();
+        scheduler.scheduleAtFixedRate(new PreferredNeighborsManager(this), 0, UNCHOKING_INTERVAL, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new OptimisticNeighborManager(this), 0, OPTIMISTIC_UNCHOKING_INTERVAL, TimeUnit.SECONDS);
     }
     
     /**
@@ -77,6 +105,11 @@ public class Transceiver
             this.peerConnectionMap.get(aPeerID).send(data);
         }
     }
+    
+    public void sendMessageToPeer(int peerID, byte[] data) throws IOException
+    {
+        this.peerConnectionMap.get(peerID).send(data);
+    }
 
     public TorrentFile getTorrentFile()
     {
@@ -86,5 +119,84 @@ public class Transceiver
     public int getMyPeerID()
     {
         return this.myPeerID;
+    }
+    
+    public void reportInterestedPeer(int peerID)
+    {
+        this.interestedNeighbours.add(new Integer(peerID));
+    }
+    
+    public void reportNotInterestedPeer(int peerID)
+    {
+        this.interestedNeighbours.remove(new Integer(peerID));
+    }
+
+    /**
+     * returns list of all the peers participating in file transfer
+     * @return List of peer IDs
+     */
+    public List<Integer> getAllPeerIDList()
+    {
+        return allPeerIDList;
+    }
+
+    /**
+     * Computes list of those peers which don't have any interesting pieces left
+     * If all the peers have interesting data, returns a list with size 0
+     * @return List of peer IDs which don't have any interesting pieces
+     */
+    public List<Integer> getWastePeersList()
+    {
+        List<Integer> wastePeersList = new ArrayList<Integer>();
+        for(Integer peerID : allPeerIDList)
+        {
+            if(myTorrentFile.hasInterestingPiece(peerID))
+            {
+                wastePeersList.add(peerID);
+            }
+        }
+        return wastePeersList;
+    }
+
+    int calculateDownloadRate(Integer peerID)
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    public Set<Integer> getInterestedNeighbours()
+    {
+        return this.interestedNeighbours;
+    }
+
+    /**
+     * Sends choked message to peer, adds it to chokedPeerSet
+     * @param peerID
+     * @throws InterruptedException 
+     * @throws IOException 
+     */
+    public void reportChokedPeer(Integer peerID) throws IOException, InterruptedException
+    {
+        //send choke message to this peer
+        this.sendMessageToPeer(peerID, new ChokeMessage().getBytes());
+        this.chokedPeersSet.add(peerID);
+    }
+
+    /**
+     * Sends unchoke message to peer and removes it from choked set if it was there
+     * @param peerID
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public void reportUnchokedPeer(int peerID) throws IOException, InterruptedException
+    {
+        //send unchoke message to this peer
+        this.sendMessageToPeer(peerID, new UnchokeMessage().getBytes());
+        this.chokedPeersSet.remove(peerID);
+    }
+
+    public Set<Integer> getChokedPeers()
+    {
+        return this.chokedPeersSet;
     }
 }

@@ -4,7 +4,7 @@ public class PeerConfig
 {
     private String hostName;
     private int listeningPort;
-    private boolean hasFile;
+    private boolean hasCompleteFile;
 
     public PeerConfig()
     {
@@ -14,7 +14,7 @@ public class PeerConfig
     {
         this.hostName = hostName;
         this.listeningPort = listeningPort;
-        this.hasFile = hasFile;
+        this.hasCompleteFile = hasFile;
     }
 
     public String getHostName()
@@ -27,9 +27,9 @@ public class PeerConfig
         return listeningPort;
     }
 
-    public boolean getHasFile()
+    public boolean hasCompleteFile()
     {
-        return hasFile;
+        return hasCompleteFile;
     }
 
     protected void setHostName(String hostName)
@@ -44,6 +44,6 @@ public class PeerConfig
 
     protected void setHasFile(boolean hasFile)
     {
-        this.hasFile = hasFile;
+        this.hasCompleteFile = hasFile;
     }
 }
