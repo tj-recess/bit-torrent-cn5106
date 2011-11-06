@@ -1,7 +1,6 @@
 package cnt5106c.torrent.peer;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,29 +14,42 @@ public class TorrentFile
     private final String fileName;
     private byte[] myFileBitmap;
     private Map<Integer, byte[]> peerIdToPieceBitmap;
-    private List<Integer> preferredPeerIDList;
-    private int optimisticallyUnchokedPeerID;
     private List<Integer> piecesRequested;
-    private List<Integer> interestedNeighbours;
     private FileHandler myFileHandler;
-    private List<Integer> allPeerIDList;
+    private final String myDirectory;
     
-    public TorrentFile(CommonConfig myConfig, Set<Integer> peerConfigIDs, FileHandler myFileHandler)
+    public TorrentFile(int myPeerID, CommonConfig myCommonConfig, Set<Integer> peerConfigIDs, boolean doIHaveFile) throws IOException
     {
-        this.fileName = myConfig.getFileName();
-        int totalPieces = myConfig.getFileSize()/myConfig.getPieceSize();   //assuming they are perfectly divisible
+        this.fileName = myCommonConfig.getFileName();
+        int totalPieces = myCommonConfig.getFileSize()/myCommonConfig.getPieceSize();   //assuming they are perfectly divisible
         this.myFileBitmap = new byte[totalPieces];
         this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
-        this.preferredPeerIDList= new ArrayList<Integer>(peerConfigIDs.size());
         this.piecesRequested = new LinkedList<Integer>();
-        this.interestedNeighbours = new LinkedList<Integer>();
         for(Integer aPeerID : peerConfigIDs)
         {
             this.peerIdToPieceBitmap.put(aPeerID, new byte[totalPieces]);
         }
-        this.myFileHandler = myFileHandler;
-        allPeerIDList = new ArrayList<Integer>();
-        allPeerIDList.addAll(this.peerIdToPieceBitmap.keySet());
+        this.myDirectory = System.getProperty("user.dir") + "/peer_" + myPeerID;
+        //create a new directory for myself, then create file handler with required file name and pass to TorrentFile
+        if(!FileHandler.createDirectoryIfNotExists(myDirectory))
+        {
+            //TODO : log error, exit
+        }
+        this.myFileHandler = new FileHandler(myDirectory + "/" + myCommonConfig.getFileName(),
+                myCommonConfig.getFileSize(), myCommonConfig.getPieceSize());
+        //create a dummy file on disk for storage if I don't have a complete file
+        if(!doIHaveFile)
+        {
+            this.myFileHandler.createDummyFile();
+        }
+        else
+        {
+            //add 1 to all of your bits in myBitmap
+            for(int i = 0; i < myFileBitmap.length; i++)
+            {
+                myFileBitmap[i] = (byte)0xFF;
+            }
+        }
     }
     
     /**
@@ -100,48 +112,9 @@ public class TorrentFile
         this.peerIdToPieceBitmap.put(peerID, bitmap);
     }
     
-    public List<Integer> getPreferredPeerIDList()
-    {
-        return preferredPeerIDList;
-    }
-    
-    public void reportInterestedPeer(int peerID)
-    {
-        if(!this.interestedNeighbours.contains(peerID))
-        {
-            this.interestedNeighbours.add(new Integer(peerID));
-        }
-    }
-    
-    public void reportNotInterestedPeer(int peerID)
-    {
-        if(this.interestedNeighbours.contains(peerID))
-        {
-            this.interestedNeighbours.remove(new Integer(peerID));
-        }
-    }
-    
     public String getFileName()
     {
         return fileName;
-    }
-
-    /**
-     * This updates the newly selected optimistically unchoked peer
-     * @param optimisticallyUnchokedPeerID ID of the peer which is selected as Optimistically Unchoked
-     */
-    public void setOptimisticallyUnchokedPeerID(int optimisticallyUnchokedPeerID)
-    {
-        this.optimisticallyUnchokedPeerID = optimisticallyUnchokedPeerID;
-    }
-    
-    /**
-     * Get the ID of the peer identified as optimistically unchoked
-     * @return peerID of optimistically unchoked peer
-     */
-    public int getOptimisticallyUnchokedPeerID()
-    {
-        return optimisticallyUnchokedPeerID;
     }
 
     public boolean doIHaveAnyPiece()
@@ -223,32 +196,5 @@ public class TorrentFile
     public byte[] getPieceData(int pieceIndex) throws IOException
     {
         return myFileHandler.getPieceFromFile(pieceIndex);
-    }
-
-    /**
-     * returns list of all the peers participating in file transfer
-     * @return List of peer IDs
-     */
-    public List<Integer> getAllPeerIDList()
-    {
-        return allPeerIDList;
-    }
-
-    /**
-     * Computes list of those peers which don't have any interesting pieces left
-     * If all the peers have interesting data, returns a list with size 0
-     * @return List of peer IDs which don't have any interesting pieces
-     */
-    public List<Integer> getWastePeersList()
-    {
-        List<Integer> wastePeersList = new ArrayList<Integer>();
-        for(Integer peerID : allPeerIDList)
-        {
-            if(hasInterestingPiece(peerID))
-            {
-                wastePeersList.add(peerID);
-            }
-        }
-        return wastePeersList;
     }
 }

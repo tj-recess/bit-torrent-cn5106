@@ -19,7 +19,6 @@ public class Peer
     private Map<String, Map<Integer, PeerConfig>> fileToPeerConfigMap;
     private Map<String, CommonConfig> fileToCommonConfigMap = null;
     private final int myPeerID;
-    private final String myDirectory;
     
     /**
      * This constructor should be called through some main function which provides peerID as an argument
@@ -31,7 +30,6 @@ public class Peer
     public Peer(int myPeerID) throws BadFileFormatException, IOException
     {
         this.myPeerID = myPeerID;
-        this.myDirectory = System.getProperty("user.dir") + "/peer_" + myPeerID;
         this.fileToCommonConfigMap = new HashMap<String, CommonConfig>();
         this.fileToPeerConfigMap = new HashMap<String, Map<Integer,PeerConfig>>();
         this.fileToTransceiverMap = new HashMap<String, Transceiver>();
@@ -54,15 +52,8 @@ public class Peer
         Map<Integer, PeerConfig> peerConfigMap = peerConfigReader.getPeerConfigMap();
         this.fileToPeerConfigMap.put(myCommonConfig.getFileName(), peerConfigMap);
         
-        //create a new directory for myself, then create file handler with required file name and pass to TorrentFile
-        if(!FileHandler.createDirectory(myDirectory))
-        {
-            //TODO : log error, exit
-        }
-        FileHandler fileHandler = new FileHandler(myDirectory + "/" + myCommonConfig.getFileName(),
-                myCommonConfig.getFileSize(), myCommonConfig.getFileSize());        
-        //create torrent file for this config, pass it on to Transceiver
-        TorrentFile aTorrentFile = new TorrentFile(myCommonConfig, peerConfigMap.keySet(), fileHandler);
-        this.fileToTransceiverMap.put(myCommonConfig.getFileName(), new Transceiver(peerConfigMap, myPeerID, aTorrentFile));
+        Transceiver aTransceiver = new Transceiver(myCommonConfig, peerConfigMap, myPeerID);
+        this.fileToTransceiverMap.put(myCommonConfig.getFileName(), aTransceiver);
+        aTransceiver.start();
     }
 }
