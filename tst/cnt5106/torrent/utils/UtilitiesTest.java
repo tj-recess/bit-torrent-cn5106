@@ -1,5 +1,7 @@
 package cnt5106.torrent.utils;
 
+import java.io.ByteArrayOutputStream;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -15,5 +17,13 @@ public class UtilitiesTest
         byte[] buffer = Utilities.getBytes(4);
         int returnVal = Utilities.getIntegerFromByteArray(buffer, 0);
         Assert.assertEquals(i, returnVal);
+    }
+    
+    @Test
+    public final void testGetStreamHandle() throws InterruptedException
+    {
+        ByteArrayOutputStream baos1 = Utilities.getStreamHandle();
+        Assert.assertNotNull(baos1);
+        Utilities.returnStreamHandle();
     }
 }
