@@ -10,6 +10,7 @@ public class Utilities
     private static ByteArrayOutputStream streamHandle = new ByteArrayOutputStream();
     private static ReentrantLock lock = new ReentrantLock();
     private static Condition borrowedStream = lock.newCondition();
+    private static boolean isStreamInUse = false;
     
     /**
      * This method is used for converting an integer into it's 4 byte representation. 
@@ -34,7 +35,11 @@ public class Utilities
         lock.lock();
         try
         {
-            borrowedStream.await();
+            if(isStreamInUse)
+            {
+                borrowedStream.await();
+            }
+            isStreamInUse = true;
             streamHandle.reset();
             return streamHandle;
         }
@@ -50,6 +55,7 @@ public class Utilities
         try
         {
             borrowedStream.signal();
+            isStreamInUse = false;
         }
         finally
         {
