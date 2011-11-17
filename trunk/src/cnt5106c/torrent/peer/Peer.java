@@ -56,4 +56,22 @@ public class Peer
         this.fileToTransceiverMap.put(myCommonConfig.getFileName(), aTransceiver);
         aTransceiver.start();
     }
+    
+    /**
+     * 
+     * @param args a Peer ID which will be used to generate peer process
+     * @throws IOException If files PeerInfo.cfg and Common.cfg are not present
+     * @throws BadFileFormatException if PeerInfo.cgf or Common.cfg are not in correct format
+     * @throws NumberFormatException If peerID is not an integer
+     */
+    public static void main(String[] args) throws NumberFormatException, BadFileFormatException, IOException
+    {
+        if(args.length < 1)
+        {
+            System.out.println("Usage: java Peer <PeerID>");
+            return;
+        }
+        
+        (new Peer(Integer.parseInt(args[0]))).startup();
+    }
 }
