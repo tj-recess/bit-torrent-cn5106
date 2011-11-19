@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import cnt5106c.torrent.config.BadFileFormatException;
 import cnt5106c.torrent.config.ConfigReader;
@@ -13,10 +15,11 @@ public class PeerStarter
 {
     private final String currentDirectoryPath = System.getProperty("user.dir");
     private final String peerConfigFileName = currentDirectoryPath + "/PeerInfo.cfg";
+    private static final Logger eventLogger = Logger.getLogger("");
     
     public static void main(String[] args)
     {
-        BasicConfigurator.configure();
+        PropertyConfigurator.configure("log4j.properties");
         PeerStarter ps = new PeerStarter();
         try
         {
@@ -41,6 +44,7 @@ public class PeerStarter
             PeerConfig aConfig = peerInfoMap.get(peerID);
             String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath + "; java -cp ../../log4j-1.2.16.jar:. cnt5106c.torrent.peer.Peer " + peerID;
             System.out.println(cmd);
+            eventLogger.info(cmd);
             Runtime.getRuntime().exec(cmd);
         }
     }
