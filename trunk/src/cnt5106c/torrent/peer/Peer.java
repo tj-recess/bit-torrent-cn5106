@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 import cnt5106c.torrent.config.BadFileFormatException;
 import cnt5106c.torrent.config.CommonConfig;
 import cnt5106c.torrent.config.ConfigReader;
@@ -19,6 +21,7 @@ public class Peer
     private Map<String, Map<Integer, PeerConfig>> fileToPeerConfigMap;
     private Map<String, CommonConfig> fileToCommonConfigMap = null;
     private final int myPeerID;
+    private static final Logger logger = Logger.getLogger(Peer.class);
     
     /**
      * This constructor should be called through some main function which provides peerID as an argument
@@ -55,6 +58,7 @@ public class Peer
         Transceiver aTransceiver = new Transceiver(myCommonConfig, peerConfigMap, myPeerID);
         this.fileToTransceiverMap.put(myCommonConfig.getFileName(), aTransceiver);
         aTransceiver.start();
+        logger.info("Transceiver started for PeerID = " + this.myPeerID);
     }
     
     /**

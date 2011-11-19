@@ -6,7 +6,7 @@
 
     <target name="compile">
         <mkdir dir="build/classes"/>
-        <javac srcdir="src" destdir="build/classes"/>
+        <javac classpath="log4j-1.2.16.jar" srcdir="src" destdir="build/classes"/>
         <javac classpath="junit.jar" srcdir="tst" destdir="build/classes"/>
     </target>
 

@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PipedInputStream;
 
+import org.apache.log4j.Logger;
+
 import cnt5106c.torrent.messages.ActualMessage;
 import cnt5106c.torrent.messages.BitfieldMessage;
 import cnt5106c.torrent.messages.HandshakeMessage;
@@ -30,6 +32,7 @@ public class EventManager implements Runnable
     private int myPeersID = -1;
     private boolean amIchoked = true;
     private Transceiver myTransceiver;
+    private static final Logger errorLogger = Logger.getLogger(EventManager.class);
     
     public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
     {
@@ -45,7 +48,7 @@ public class EventManager implements Runnable
     {
         try
         {
-            //start the thread for this client to start receiving stuff before sending anything
+            //start a new thread for this client to start receiving stuff before sending anything
             (new Thread(myClient)).start();
             this.readDataAndTakeAction();
         }
@@ -172,7 +175,7 @@ public class EventManager implements Runnable
         //send have message to every one to notify about this piece received
         myTransceiver.sendMessageToGroup(myTransceiver.getAllPeerIDList(), (new HaveMessage(pieceIndex)).getBytes());
         //after receiving the piece check if you need to send not-interested message to any of the peers
-        myTransceiver.sendMessageToGroup(myTransceiver.getWastePeersList(), new NotInterestedMessage().getBytes());
+        myTransceiver.sendMessageToGroup(myTransceiver.computeAndGetWastePeersList(), new NotInterestedMessage().getBytes());
     }
 
     /**
@@ -203,10 +206,13 @@ public class EventManager implements Runnable
         myTorrentFile.reportPeerPieceAvailablity(myPeersID, pieceIndex);
         if(!myTorrentFile.doIHavePiece(pieceIndex))
         {
+            //report that neighbor is interesting
+            myTransceiver.reportInterestedPeer(myPeersID);
             myClient.send((new InterestedMessage()).getBytes());
         }
         else
         {
+            myTransceiver.reportNotInterestedPeer(myPeersID);
             myClient.send((new NotInterestedMessage()).getBytes());
         }
     }
@@ -246,6 +252,7 @@ public class EventManager implements Runnable
     private void processHandshake(HandshakeMessage handshakeMsg) throws IOException, InterruptedException
     {
         this.myPeersID = handshakeMsg.getPeerID();
+        //TODO : check if handshake header is correct or not
         //send my bitmap to others only if I have some piece
         if(myTorrentFile.doIHaveAnyPiece())
         {

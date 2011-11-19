@@ -8,7 +8,7 @@ import cnt5106c.torrent.utils.Utilities;
 public class HandshakeMessage extends Message
 {
 	protected static final long serialVersionUID = 2L;
-	final String HANDSHAKE_MSG_HEADER;
+	public final String HANDSHAKE_MSG_HEADER;
     private int peerID = -1;
 	
 	public HandshakeMessage(int peerID) throws IOException, InterruptedException

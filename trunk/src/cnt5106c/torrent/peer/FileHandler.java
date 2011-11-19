@@ -48,14 +48,14 @@ public class FileHandler
         
         //write CHUNK_SIZE bytes in the file until we cover it's length
         FileOutputStream fos = new FileOutputStream(myFile);
+        byte[] tempBuffer = new byte[CHUNK_SIZE];
         for(int i = CHUNK_SIZE; i < myFileSize; i += CHUNK_SIZE)
         {
-            byte[] tempBuffer = new byte[i];
             fos.write(tempBuffer);
         }
         //now write remaining bytes
         int remainingBytes = myFileSize & (CHUNK_SIZE - 1);     //replacement of modulo
-        byte[] tempBuffer = new byte[remainingBytes];
+        tempBuffer = new byte[remainingBytes];
         fos.write(tempBuffer);
         
         //close the output stream as we are done writing, this will also flush the data
@@ -97,5 +97,6 @@ public class FileHandler
         RandomAccessFile raf = new RandomAccessFile(this.myFile, "rw");
         raf.seek(Math.max((pieceID -1)*myPieceSize, 0));
         raf.write(pieceData);
+        raf.close();
     }    
 }

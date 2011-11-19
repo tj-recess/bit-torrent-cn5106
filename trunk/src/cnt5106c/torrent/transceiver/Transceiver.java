@@ -13,6 +13,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Logger;
+
 import cnt5106c.torrent.config.CommonConfig;
 import cnt5106c.torrent.config.PeerConfig;
 import cnt5106c.torrent.messages.ChokeMessage;
@@ -34,6 +36,7 @@ public class Transceiver
     private List<Integer> allPeerIDList;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
+    private static final Logger logger = Logger.getLogger(Transceiver.class);
 
     /**
      * This ctor starts server immediately in the background on the listening port 
@@ -69,6 +72,7 @@ public class Transceiver
     public void start() throws SocketTimeoutException, IOException
     {
         (new Thread(new Server(myHostName, myListenerPort, this))).start();
+        logger.info("Started the server on port " + myListenerPort);
         this.processPeerInfoMap();
         scheduler.scheduleAtFixedRate(new PreferredNeighborsManager(this), 0, UNCHOKING_INTERVAL, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(new OptimisticNeighborManager(this), 0, OPTIMISTIC_UNCHOKING_INTERVAL, TimeUnit.SECONDS);
@@ -94,6 +98,7 @@ public class Transceiver
                 //start event manager before client starts any activity
                 (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);
+                logger.info("Started Client for peerID = " + aPeerID);
             }
         }
     }
@@ -145,12 +150,12 @@ public class Transceiver
      * If all the peers have interesting data, returns a list with size 0
      * @return List of peer IDs which don't have any interesting pieces
      */
-    public List<Integer> getWastePeersList()
+    public List<Integer> computeAndGetWastePeersList()
     {
         List<Integer> wastePeersList = new ArrayList<Integer>();
         for(Integer peerID : allPeerIDList)
         {
-            if(myTorrentFile.hasInterestingPiece(peerID))
+            if(!myTorrentFile.hasInterestingPiece(peerID))
             {
                 wastePeersList.add(peerID);
             }
@@ -179,7 +184,10 @@ public class Transceiver
     {
         //send choke message to this peer
         this.sendMessageToPeer(peerID, new ChokeMessage().getBytes());
-        this.chokedPeersSet.add(peerID);
+        synchronized(this)
+        {
+            this.chokedPeersSet.add(peerID);
+        }
     }
 
     /**
@@ -192,7 +200,10 @@ public class Transceiver
     {
         //send unchoke message to this peer
         this.sendMessageToPeer(peerID, new UnchokeMessage().getBytes());
-        this.chokedPeersSet.remove(peerID);
+        synchronized(this)
+        {
+            this.chokedPeersSet.remove(peerID);
+        }
     }
 
     public Set<Integer> getChokedPeers()

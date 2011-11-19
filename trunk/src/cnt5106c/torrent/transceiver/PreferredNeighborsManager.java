@@ -79,9 +79,9 @@ public class PreferredNeighborsManager implements Runnable
             {
                 //report to transceiver
                 myTransceiver.reportUnchokedPeer(peerID);
-                //add this client to new preferred list
-                newPreferredPeersList.add(peerID);
             }
+            //add this client to new preferred list
+            newPreferredPeersList.add(peerID);
         }
         
         //now go through old preferred neighbors and send choke to those who are not preferred now

@@ -11,7 +11,8 @@ public class PieceMessage extends PayloadMessage
 
     public PieceMessage(int pieceIndex, byte[] data) throws IOException, InterruptedException
     {
-        super(MessageType.piece);
+        //the length in super(...) call indicates length of pieceIndex + data
+        super(Integer.SIZE + data.length, MessageType.piece);
         ByteArrayOutputStream baos = Utilities.getStreamHandle();
         baos.write(super.message);
         baos.write(Utilities.getBytes(pieceIndex));

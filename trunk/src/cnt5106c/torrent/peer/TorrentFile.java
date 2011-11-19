@@ -12,6 +12,10 @@ import cnt5106c.torrent.config.CommonConfig;
 public class TorrentFile
 {
     private final String fileName;
+    /**
+     * Bitmap stores the file in the following format
+     * [7,6,5,4,3,2,1,0][15,14,13,12,11,10,9,8][...]
+     */
     private byte[] myFileBitmap;
     private Map<Integer, byte[]> peerIdToPieceBitmap;
     private List<Integer> piecesRequested;
@@ -21,13 +25,13 @@ public class TorrentFile
     public TorrentFile(int myPeerID, CommonConfig myCommonConfig, Set<Integer> peerConfigIDs, boolean doIHaveFile) throws IOException
     {
         this.fileName = myCommonConfig.getFileName();
-        int totalPieces = myCommonConfig.getFileSize()/myCommonConfig.getPieceSize();   //assuming they are perfectly divisible
-        this.myFileBitmap = new byte[totalPieces];
+        int totalBytesRequiredForPieces = (int)Math.ceil(Math.ceil(myCommonConfig.getFileSize() / myCommonConfig.getPieceSize()) / 8);
+        this.myFileBitmap = new byte[totalBytesRequiredForPieces];
         this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
         this.piecesRequested = new LinkedList<Integer>();
         for(Integer aPeerID : peerConfigIDs)
         {
-            this.peerIdToPieceBitmap.put(aPeerID, new byte[totalPieces]);
+            this.peerIdToPieceBitmap.put(aPeerID, new byte[totalBytesRequiredForPieces]);
         }
         this.myDirectory = System.getProperty("user.dir") + "/peer_" + myPeerID;
         //create a new directory for myself, then create file handler with required file name and pass to TorrentFile
@@ -44,6 +48,10 @@ public class TorrentFile
         }
         else
         {
+            //TODO : check first if file is actually existing or not ????
+            //take action accordingly
+            //TODO : check if file size matches the file-size specified in Common.cfg
+            
             //add 1 to all of your bits in myBitmap
             for(int i = 0; i < myFileBitmap.length; i++)
             {
@@ -53,7 +61,7 @@ public class TorrentFile
     }
     
     /**
-     * This method will update the piece map with the received piece id, store the piece on disk
+     * This method will update the piece map with the received piece id and store the piece on disk
      * @param pieceID the number of piece received
      * @throws IOException If there is any issue while write data to disk
      */
@@ -142,7 +150,9 @@ public class TorrentFile
         byte[] peerFileBitmap = this.peerIdToPieceBitmap.get(myPeersID); 
         for(int i = 0; i < len; i++)
         {
-            if((myFileBitmap[i] & peerFileBitmap[i]) != 0)
+            //logic : if peer has anything more than us, then ORing the two bitmaps will give more 1s than existing
+            //e.g. my = 01101100, peer = 11101100 => my | peer = 11101100. Clearly, (my|peer) > my
+            if((myFileBitmap[i] | peerFileBitmap[i]) >= myFileBitmap[i])
             {
                 return true;
             }
@@ -150,6 +160,11 @@ public class TorrentFile
         return false;
     }
 
+    /**
+     * This method finds a random interesting piece index which is available from the given peerID
+     * @param peerID ID of the peer which has the desired piece
+     * @return piece index. If -1, then no interesting piece was found.
+     */
     public int getRequiredPieceIndexFromPeer(int peerID)
     {
         int desiredPieceID = -1;
@@ -159,7 +174,7 @@ public class TorrentFile
         final int len = myFileBitmap.length;
         for(int i = 0; i < len && desiredPieceID == -1; i++)
         {
-            if((myFileBitmap[i] & peerBitmap[i]) != 0)
+            if((myFileBitmap[i] | peerBitmap[i]) > myFileBitmap[i])
             {
                 for(int j = 0; j < 8 && desiredPieceID == -1; j++)
                 {

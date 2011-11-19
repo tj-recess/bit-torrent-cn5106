@@ -13,8 +13,8 @@ public class UtilitiesTest
     @Test
     public void testGetIntegerFromByteArray()
     {
-        int i = 4;
-        byte[] buffer = Utilities.getBytes(4);
+        int i = 128;
+        byte[] buffer = Utilities.getBytes(i);
         int returnVal = Utilities.getIntegerFromByteArray(buffer, 0);
         Assert.assertEquals(i, returnVal);
     }
