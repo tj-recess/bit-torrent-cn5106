@@ -20,7 +20,7 @@ public class Client implements Runnable
     private DataInputStream dis;
 	private String serverAddress;
 	private int serverPort;
-    private PipedOutputStream pipedOutputStream;
+    private PipedOutputStream pipedOutputStream = new PipedOutputStream();
 	
     /**
      * This ctor is generally used when this peer initiates the connection with other peers.
@@ -33,7 +33,6 @@ public class Client implements Runnable
 	{
 	    this.serverAddress = serverAddress;
 	    this.serverPort = serverPort;
-	    this.pipedOutputStream = new PipedOutputStream();
 	    
 	    this.me = new Socket();
 	    this.me.connect(new InetSocketAddress(this.serverAddress, this.serverPort), TIMEOUT);

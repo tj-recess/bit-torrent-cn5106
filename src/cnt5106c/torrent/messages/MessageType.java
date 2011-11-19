@@ -13,6 +13,7 @@ public enum MessageType implements Serializable
     request(6), 
     piece(7);
     
+    //TODO : msgType should be a byte according to project specifications
     private int msgType;
 
     private MessageType(int msgType)
