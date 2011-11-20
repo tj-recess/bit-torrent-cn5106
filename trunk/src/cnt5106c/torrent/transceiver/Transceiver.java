@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 import cnt5106c.torrent.config.CommonConfig;
 import cnt5106c.torrent.config.PeerConfig;
@@ -36,7 +37,8 @@ public class Transceiver
     private List<Integer> allPeerIDList;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
-    private static final Logger logger = Logger.getLogger(Transceiver.class);
+    //private static final Logger logger = Logger.getLogger(Transceiver.class);
+    private static final Logger eventLogger = Logger.getLogger("PeerLogging");
 
     /**
      * This ctor starts server immediately in the background on the listening port 
@@ -67,12 +69,17 @@ public class Transceiver
         allPeerIDList.addAll(this.peerInfoMap.keySet());
         //initialize interested neighbors list with allPeerIDsList
         this.interestedNeighbours.addAll(allPeerIDList);
+        
+        String peerLogFileName = "log_peer_" + myPeerID + ".log";
+        // start logger for this peer
+        System.setProperty("peer.logfile", peerLogFileName);
+        PropertyConfigurator.configure("log4j.properties");
     }
     
     public void start() throws SocketTimeoutException, IOException
     {
         (new Thread(new Server(myHostName, myListenerPort, this))).start();
-        logger.info("Started the server on port " + myListenerPort);
+        eventLogger.info("Started the server on port " + myListenerPort);
         this.processPeerInfoMap();
         scheduler.scheduleAtFixedRate(new PreferredNeighborsManager(this), 0, UNCHOKING_INTERVAL, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(new OptimisticNeighborManager(this), 0, OPTIMISTIC_UNCHOKING_INTERVAL, TimeUnit.SECONDS);
@@ -98,7 +105,7 @@ public class Transceiver
                 //start event manager before client starts any activity
                 (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);
-                logger.info("Started Client for peerID = " + aPeerID);
+                eventLogger.info("Started Client for peerID = " + aPeerID);
             }
         }
     }
