@@ -37,7 +37,7 @@ public class Transceiver
     private List<Integer> allPeerIDList;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
-    private static final Logger debugLogger = Logger.getLogger("A");
+    //private static final Logger debugLogger = Logger.getLogger("A");
     private static final Logger eventLogger = Logger.getLogger("B");
 
     /**
@@ -67,8 +67,6 @@ public class Transceiver
         allPeerIDList = new ArrayList<Integer>();
         //add all the peerIDs in allPeerIDList
         allPeerIDList.addAll(this.peerInfoMap.keySet());
-        //initialize interested neighbors list with allPeerIDsList
-        this.interestedNeighbours.addAll(allPeerIDList);
         
         // Make the log file name for this peer
         String peerLogFileName = "log_peer_" + myPeerID + ".log";

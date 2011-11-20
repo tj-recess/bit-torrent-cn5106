@@ -46,12 +46,15 @@ public class OptimisticNeighborManager implements Runnable
         interestedAndChoked.addAll(myTransceiver.getInterestedNeighbours());
         //find 1 random peer from the intersection of interested and preferred
         interestedAndChoked.retainAll(chokedPeersSet);
-        Random rand = new Random();
-        int selectedPeer = interestedAndChoked.get(rand.nextInt(interestedAndChoked.size()));
-        //send unchoke message to this random peer
-        myTransceiver.reportUnchokedPeer(selectedPeer);
-        // Log this event
-        myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has optimistically unchoked neighbor " + selectedPeer);
+        if(interestedAndChoked.size() > 0)
+        {
+            Random rand = new Random();
+            int selectedPeer = interestedAndChoked.get(rand.nextInt(interestedAndChoked.size()));
+            //send unchoke message to this random peer
+            myTransceiver.reportUnchokedPeer(selectedPeer);
+            // Log this event
+            myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has optimistically unchoked neighbor " + selectedPeer);
+        }
     }
 
 }
