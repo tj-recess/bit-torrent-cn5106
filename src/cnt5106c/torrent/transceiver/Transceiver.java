@@ -108,7 +108,7 @@ public class Transceiver
                 (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);
                 //eventLogger.info("Started Client for peerID = " + aPeerID);
-                eventLogger.info("Peer " + myPeerID + "makes a connection to Peer " + aPeerID);
+                eventLogger.info("Peer " + myPeerID + " makes a connection to Peer " + aPeerID);
             }
         }
     }
