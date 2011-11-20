@@ -21,7 +21,7 @@ public class Peer
     private Map<String, Map<Integer, PeerConfig>> fileToPeerConfigMap;
     private Map<String, CommonConfig> fileToCommonConfigMap = null;
     private final int myPeerID;
-    private static final Logger logger = Logger.getLogger(Peer.class);
+    private static final Logger logger = Logger.getLogger("A");
     
     /**
      * This constructor should be called through some main function which provides peerID as an argument

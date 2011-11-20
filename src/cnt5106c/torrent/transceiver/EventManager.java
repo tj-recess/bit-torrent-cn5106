@@ -33,7 +33,7 @@ public class EventManager implements Runnable
     private int myPeersID = -1;
     private boolean amIchoked = true;
     private Transceiver myTransceiver;
-    private static final Logger errorLogger = Logger.getLogger(EventManager.class);
+    private static final Logger errorLogger = Logger.getLogger("A");
     private static final Logger eventLogger = Logger.getLogger("B");
     
     public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
@@ -62,12 +62,10 @@ public class EventManager implements Runnable
         }
         catch (IOException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            errorLogger.fatal("IOEx", e);
         } catch (InterruptedException e)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            errorLogger.fatal("InterruptedEx", e);
         }
     }
     
@@ -93,9 +91,8 @@ public class EventManager implements Runnable
         this.processHandshake(this.receiveHandshake());
         
         //now always receive bytes and take action
-        while(true)
+        while(!myTorrentFile.canIQuit())
         {
-            //TODO : break this loop when done
             ActualMessage msg = getNextMessage();
             //now interpret the message and take action
             takeAction(msg);
@@ -250,7 +247,6 @@ public class EventManager implements Runnable
     private void takeActionForUnchokeMessage() throws IOException, InterruptedException
     {
     	eventLogger.info("Peer " + myOwnID + " is unchoked by " + myPeersID);
-        //TODO:
         //first of all set the status that I am now unchoked
         this.amIchoked = false;
         //select any piece which my peer has but I don't have and I have not already requested
@@ -263,8 +259,7 @@ public class EventManager implements Runnable
 
     private void takeActionForChokeMessage()
     {
-    	eventLogger.info("Peer " + myOwnID + " is choked by " + myPeersID);
-        //TODO: 
+    	eventLogger.info("Peer " + myOwnID + " is choked by " + myPeersID); 
         //set the status that I am choked now
         this.amIchoked = true;
     }
