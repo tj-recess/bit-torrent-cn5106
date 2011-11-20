@@ -96,5 +96,14 @@ public class PreferredNeighborsManager implements Runnable
         
         //finally replace old list with new preferred peers list
         this.preferredPeerIDSet = newPreferredPeersList;
+        
+        // print this comma separated list in event logger
+        String commaSeparatedList = "";
+        for(Integer peerID : this.preferredPeerIDSet)
+        {
+        	commaSeparatedList += peerID;
+        	commaSeparatedList += ",";
+        }
+        myTransceiver.getEventLogger().info("Peer " + myTransceiver.getMyPeerID() + " has the preferred neighbors " + commaSeparatedList);        
     }
 }
