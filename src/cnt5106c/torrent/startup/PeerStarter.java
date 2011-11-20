@@ -3,7 +3,6 @@ package cnt5106c.torrent.startup;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 

@@ -70,8 +70,9 @@ public class Transceiver
         //initialize interested neighbors list with allPeerIDsList
         this.interestedNeighbours.addAll(allPeerIDList);
         
+        // Make the log file name for this peer
         String peerLogFileName = "log_peer_" + myPeerID + ".log";
-        // start logger for this peer
+        // Start logger for this peer
         System.setProperty("peer.logfile", peerLogFileName);
         PropertyConfigurator.configure("log4j.properties");
 		eventLogger.info("Eventlogger from peer started");
@@ -106,7 +107,8 @@ public class Transceiver
                 //start event manager before client starts any activity
                 (new Thread(anEventManager)).start();
                 this.peerConnectionMap.put(aPeerID, newClient);
-                eventLogger.info("Started Client for peerID = " + aPeerID);
+                //eventLogger.info("Started Client for peerID = " + aPeerID);
+                eventLogger.info("Peer " + myPeerID + "makes a connection to Peer " + aPeerID);
             }
         }
     }
@@ -132,6 +134,11 @@ public class Transceiver
     public int getMyPeerID()
     {
         return this.myPeerID;
+    }
+    
+    public final Logger getEventLogger()
+    {
+    	return eventLogger;
     }
     
     public void reportInterestedPeer(int peerID)
