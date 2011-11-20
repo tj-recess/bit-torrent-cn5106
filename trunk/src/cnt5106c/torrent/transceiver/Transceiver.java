@@ -137,9 +137,9 @@ public class Transceiver
         return this.myPeerID;
     }
     
-    public final Logger getEventLogger()
+    void logMessage(String msg)
     {
-    	return eventLogger;
+    	eventLogger.info(msg);
     }
     
     public void reportInterestedPeer(int peerID)

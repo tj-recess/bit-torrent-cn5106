@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 
 import cnt5106c.torrent.messages.ActualMessage;
 import cnt5106c.torrent.messages.BitfieldMessage;
@@ -34,21 +33,14 @@ public class EventManager implements Runnable
     private boolean amIchoked = true;
     private Transceiver myTransceiver;
     private static final Logger errorLogger = Logger.getLogger("A");
-    private static final Logger eventLogger = Logger.getLogger("B");
-    
+        
     public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
     {
         this.myTransceiver = myTransceiver;
         this.myTorrentFile = myTransceiver.getTorrentFile();
         this.myClient = aClient;
         this.dis = new DataInputStream(new PipedInputStream(aClient.getPipedOutputStream()));
-        this.myOwnID = myTransceiver.getMyPeerID();
-        
-        // Make the log file name for this peer
-        String peerLogFileName = "log_peer_" + myOwnID + ".log";
-        // Start logger for this peer
-        System.setProperty("peer.logfile", peerLogFileName);
-        PropertyConfigurator.configure("log4j.properties");
+        this.myOwnID = myTransceiver.getMyPeerID();       
     }
     
     @Override
@@ -170,8 +162,12 @@ public class EventManager implements Runnable
         myTorrentFile.reportPieceReceived(pieceIndex, pieceData);
         
         // write this action in peer's log file
-        eventLogger.info("Peer " + myOwnID + " has downloaded the piece " + pieceIndex + " from " + myPeersID);
-        //TODO: now the number of pieces it has is : pieces_received
+        myTransceiver.logMessage("Peer " + myOwnID + " has downloaded the piece " + pieceIndex + " from " + myPeersID 
+        						 + ". Now the number of pieves it has is " + myTorrentFile.getDownloadedPieceCount(myOwnID));
+        
+        // check if all pieces have been downloaded
+        if (myTorrentFile.getDownloadedPieceCount(myOwnID) == myTorrentFile.getTotalPieceCount())
+        	myTransceiver.logMessage("Peer " + myOwnID + "has downloaded the complete file.");
         
         // If not choked, request for more pieces
         if(!amIchoked)
@@ -215,7 +211,7 @@ public class EventManager implements Runnable
         //as we know that this payload is piece index, convert it and pass to torrent file
         int pieceIndex = Utilities.getIntegerFromByteArray(payload, 0);
         
-        eventLogger.info("Peer " + myOwnID + " received the 'have' message from " + myPeersID + " for the piece " + pieceIndex);
+        myTransceiver.logMessage("Peer " + myOwnID + " received the 'have' message from " + myPeersID + " for the piece " + pieceIndex);
         myTorrentFile.reportPeerPieceAvailablity(myPeersID, pieceIndex);
         if(!myTorrentFile.doIHavePiece(pieceIndex))
         {
@@ -232,21 +228,21 @@ public class EventManager implements Runnable
 
     private void takeActionForNotInterestedMessage()
     {
-    	eventLogger.info("Peer " + myOwnID + " received the 'not interested' message from " + myPeersID);
+    	myTransceiver.logMessage("Peer " + myOwnID + " received the 'not interested' message from " + myPeersID);
         //remove from interested neighbours list
         myTransceiver.reportNotInterestedPeer(myPeersID);
     }
 
     private void takeActionForInterestedMessage()
     {
-    	eventLogger.info("Peer " + myOwnID + " received the 'interested' message from " + myPeersID);
+    	myTransceiver.logMessage("Peer " + myOwnID + " received the 'interested' message from " + myPeersID);
         //add to interested neighbors list
         myTransceiver.reportInterestedPeer(myPeersID);
     }
 
     private void takeActionForUnchokeMessage() throws IOException, InterruptedException
     {
-    	eventLogger.info("Peer " + myOwnID + " is unchoked by " + myPeersID);
+    	myTransceiver.logMessage("Peer " + myOwnID + " is unchoked by " + myPeersID);
         //first of all set the status that I am now unchoked
         this.amIchoked = false;
         //select any piece which my peer has but I don't have and I have not already requested
@@ -259,7 +255,7 @@ public class EventManager implements Runnable
 
     private void takeActionForChokeMessage()
     {
-    	eventLogger.info("Peer " + myOwnID + " is choked by " + myPeersID); 
+    	myTransceiver.logMessage("Peer " + myOwnID + " is choked by " + myPeersID); 
         //set the status that I am choked now
         this.amIchoked = true;
     }
@@ -268,6 +264,9 @@ public class EventManager implements Runnable
     {
         this.myPeersID = handshakeMsg.getPeerID();
         //TODO : check if handshake header is correct or not
+        
+        myTransceiver.logMessage("Peer " + myOwnID + " is connected from Peer " + myPeersID);
+        
         //send my bitmap to others only if I have some piece
         if(myTorrentFile.doIHaveAnyPiece())
         {

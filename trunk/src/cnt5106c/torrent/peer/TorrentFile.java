@@ -88,6 +88,10 @@ public class TorrentFile
         return this.peerIdToPieceBitmap.get(myPeerID);
     }
 
+    public int getTotalPieceCount()
+    {
+    	return totalPiecesRequired;
+    }
     /**
      * updates the peer's bitmap with the piece id received. This method also updates piece download count for given peerID
      * @param peerID ID of the peer from which this info has been received (the peer who sent have message)
@@ -97,7 +101,7 @@ public class TorrentFile
     {
         byte[] peerFileBitmap = this.peerIdToPieceBitmap.get(peerID);
         updateBitmapWithPiece(peerFileBitmap, pieceIndex);
-        this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);
+        this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);        
     }
     
     /**
