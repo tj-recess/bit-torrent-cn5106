@@ -33,8 +33,8 @@ public class TorrentFile
         this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
         this.peerIdToPieceDownloadCount = new ConcurrentHashMap<Integer, AtomicInteger>();
         this.piecesRequested = new LinkedList<Integer>();
-        this.totalPiecesRequired = (int)Math.ceil(myCommonConfig.getFileSize() / myCommonConfig.getPieceSize());
-        int totalBytesRequiredForPieces = (int)Math.ceil(totalPiecesRequired / 8);
+        this.totalPiecesRequired = (int)Math.ceil((double)myCommonConfig.getFileSize() / myCommonConfig.getPieceSize());
+        int totalBytesRequiredForPieces = (int)Math.ceil((double)totalPiecesRequired / 8);
         //initialize maps with all peerIDs (including mine) and 0s in value field
         for(Integer aPeerID : peerConfigIDs)
         {
@@ -61,10 +61,16 @@ public class TorrentFile
             //TODO : check if file size matches the file-size specified in Common.cfg
             
             //add 1 to all of your bits in myBitmap
-            byte[] myFileBitmap = this.peerIdToPieceBitmap.get(myPeerID);            
-            for(int i = 0; i < myFileBitmap.length; i++)
+            byte[] myFileBitmap = this.peerIdToPieceBitmap.get(myPeerID); 
+            int len = myFileBitmap.length;
+            for(int i = 0; i < len; i++)
             {
                 myFileBitmap[i] = (byte)0xFF;
+            }
+            int lastBytePieces = totalPiecesRequired & 7;   //totalPiecesRequired & 7 = totalPiecesRequired % 8
+            if(lastBytePieces > 0)  //then zero-filling is required
+            {
+                myFileBitmap[len - 1] = (byte)(myFileBitmap[len - 1]&0xFF >>> (8 - lastBytePieces));
             }
         }
     }
@@ -198,7 +204,8 @@ public class TorrentFile
         {
             //logic : if peer has anything more than us, then ORing the two bitmaps will give more 1s than existing
             //e.g. my = 01101100, peer = 11101100 => my | peer = 11101100. Clearly, (my|peer) > my
-            if((myFileBitmap[i] | peerFileBitmap[i]) >= myFileBitmap[i])
+            //casting to int and & with 0xFF because 11111111 is treated as -1 if considered byte
+            if((0xFF&(int)(myFileBitmap[i] | peerFileBitmap[i])) >= (0xFF&(int)myFileBitmap[i]))
             {
                 return true;
             }

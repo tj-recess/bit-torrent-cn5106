@@ -11,7 +11,7 @@ public class PayloadMessage extends ActualMessage
 
     public PayloadMessage(MessageType msgType, byte[] payload) throws IOException, InterruptedException
     {
-        super(payload.length + Integer.SIZE, msgType);  //size should be the final one which includes type length and payload length
+        super(payload.length + MessageType.getMessageTypeLength(), msgType);  //size should be the final one which includes type length and payload length
         ByteArrayOutputStream baos = Utilities.getStreamHandle();
         baos.write(super.message);
         baos.write(payload);
@@ -27,7 +27,7 @@ public class PayloadMessage extends ActualMessage
      */
     public PayloadMessage(int msgLength, MessageType msgType) throws IOException, InterruptedException
     {
-        super(msgLength + Integer.SIZE, msgType);
+        super(msgLength + MessageType.getMessageTypeLength(), msgType);
     }
     
 }
