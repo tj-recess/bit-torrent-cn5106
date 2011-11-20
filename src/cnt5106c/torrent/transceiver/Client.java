@@ -63,7 +63,7 @@ public class Client implements Runnable
 	    
 	    //now read the data indicated by length and write it to buffer
 	    byte[] buffer = new byte[length];
-	    dis.read(buffer);
+	    dis.readFully(buffer);
 	    pipedOutputStream.write(buffer);
 	}
 	

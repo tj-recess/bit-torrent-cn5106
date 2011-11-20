@@ -19,6 +19,8 @@ public class Server implements Runnable
         // 0 provided for backlog represents default value
         this.serverSocket = new ServerSocket(port, 0, InetAddress.getByName(hostName));
         this.myTransceiver = myTransceiver;
+        Server.acitivityLogger.info("Server is ready to listen now at address : " 
+                + this.serverSocket.getLocalSocketAddress().toString() + " and port : " + this.serverSocket.getLocalPort());
     }
 
     @Override
@@ -30,8 +32,6 @@ public class Server implements Runnable
             // wait for connections forever
             try
             {
-                Server.acitivityLogger.info("Server is ready to listen now at address : " 
-                        + this.serverSocket.getLocalSocketAddress().toString() + " and port : " + this.serverSocket.getLocalPort());
                 aClientSocket = this.serverSocket.accept();
                 Server.acitivityLogger.info("Server received a client request!");
                 //start an Event manager in another thread for further communication
@@ -39,8 +39,7 @@ public class Server implements Runnable
             }
             catch (IOException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                Server.acitivityLogger.fatal("IOEx in Server", e);
             }
         }
     }

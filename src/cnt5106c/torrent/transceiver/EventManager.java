@@ -32,8 +32,9 @@ public class EventManager implements Runnable
     private int myPeersID = -1;
     private boolean amIchoked = true;
     private Transceiver myTransceiver;
-    private static final Logger errorLogger = Logger.getLogger("A");
-        
+    private static final Logger debugLogger = Logger.getLogger("A");
+    private final String debugHeader;
+    
     public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
     {
         this.myTransceiver = myTransceiver;
@@ -41,6 +42,7 @@ public class EventManager implements Runnable
         this.myClient = aClient;
         this.dis = new DataInputStream(new PipedInputStream(aClient.getPipedOutputStream()));
         this.myOwnID = myTransceiver.getMyPeerID();       
+        debugHeader = "Peer " + this.myOwnID + " : ";
     }
     
     @Override
@@ -54,10 +56,10 @@ public class EventManager implements Runnable
         }
         catch (IOException e)
         {
-            errorLogger.fatal("IOEx", e);
+            debugLogger.fatal("IOEx", e);
         } catch (InterruptedException e)
         {
-            errorLogger.fatal("InterruptedEx", e);
+            debugLogger.fatal("InterruptedEx", e);
         }
     }
     
@@ -66,6 +68,7 @@ public class EventManager implements Runnable
         myClient.receive(32);
         byte[] handshakeMsg = new byte[32];
         dis.read(handshakeMsg);
+        debugLogger.info(debugHeader + "Received Handshake message : " + new String(handshakeMsg));
         return new HandshakeMessage(handshakeMsg);
     }
 
@@ -73,6 +76,7 @@ public class EventManager implements Runnable
     {
         Message msg = new HandshakeMessage(myPeerID);
         myClient.send(msg.getBytes());
+        debugLogger.info(debugHeader + "sent Handshake to peer " + myPeersID);
     }
 
     private void readDataAndTakeAction() throws IOException, InterruptedException
@@ -85,6 +89,7 @@ public class EventManager implements Runnable
         //now always receive bytes and take action
         while(!myTorrentFile.canIQuit())
         {
+            debugLogger.debug(debugHeader + "waiting to receive next message");
             ActualMessage msg = getNextMessage();
             //now interpret the message and take action
             takeAction(msg);
@@ -94,6 +99,7 @@ public class EventManager implements Runnable
     private void takeAction(ActualMessage msg) throws IOException, InterruptedException
     {
         int payloadLength = msg.getMessageLength() - Integer.SIZE;  //removing  the size of message type
+        debugLogger.debug(debugHeader + "Received msg of length " + payloadLength);
         switch(msg.getMsgType())
         {
         case choke:
@@ -263,6 +269,8 @@ public class EventManager implements Runnable
     private void processHandshake(HandshakeMessage handshakeMsg) throws IOException, InterruptedException
     {
         this.myPeersID = handshakeMsg.getPeerID();
+        //report this peer connection to Transceiver
+        this.myTransceiver.reportNewClientConnection(this.myPeersID, myClient);
         //TODO : check if handshake header is correct or not
         
         myTransceiver.logMessage("Peer " + myOwnID + " is connected from Peer " + myPeersID);
