@@ -104,6 +104,6 @@ public class PreferredNeighborsManager implements Runnable
         	commaSeparatedList += peerID;
         	commaSeparatedList += ",";
         }
-        myTransceiver.getEventLogger().info("Peer " + myTransceiver.getMyPeerID() + " has the preferred neighbors " + commaSeparatedList);        
+        myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has the preferred neighbors " + commaSeparatedList);        
     }
 }

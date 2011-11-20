@@ -51,7 +51,7 @@ public class OptimisticNeighborManager implements Runnable
         //send unchoke message to this random peer
         myTransceiver.reportUnchokedPeer(selectedPeer);
         // Log this event
-        myTransceiver.getEventLogger().info("Peer " + myTransceiver.getMyPeerID() + " has optimistically unchoked neighbor " + selectedPeer);
+        myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has optimistically unchoked neighbor " + selectedPeer);
     }
 
 }
