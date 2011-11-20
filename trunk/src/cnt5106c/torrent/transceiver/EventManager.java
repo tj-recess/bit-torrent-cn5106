@@ -50,6 +50,11 @@ public class EventManager implements Runnable
     {
         try
         {
+            //send handshake as connection is already established
+            this.sendHandshake(myOwnID);
+            //now wait for receiving handshake and interpret handshake message
+            this.processHandshake(this.receiveHandshake());
+
             //start a new thread for this client to start receiving stuff before sending anything
             (new Thread(myClient)).start();
             this.readDataAndTakeAction();
@@ -80,12 +85,7 @@ public class EventManager implements Runnable
     }
 
     private void readDataAndTakeAction() throws IOException, InterruptedException
-    {
-        //send handshake as connection is already established
-        this.sendHandshake(myOwnID);
-        //now wait for receiving handshake and interpret handshake message
-        this.processHandshake(this.receiveHandshake());
-        
+    {        
         //now always receive bytes and take action
         while(!myTorrentFile.canIQuit())
         {
@@ -98,7 +98,7 @@ public class EventManager implements Runnable
 
     private void takeAction(ActualMessage msg) throws IOException, InterruptedException
     {
-        int payloadLength = msg.getMessageLength() - Integer.SIZE;  //removing  the size of message type
+        int payloadLength = msg.getMessageLength() - MessageType.getMessageTypeLength();  //removing  the size of message type
         debugLogger.debug(debugHeader + "Received msg of length " + payloadLength);
         switch(msg.getMsgType())
         {
@@ -162,7 +162,7 @@ public class EventManager implements Runnable
         //retrieve the piece from pipe
         //first retrieve the piece index
         int pieceIndex = dis.readInt();
-        byte[] pieceData = new byte[msgLength - Integer.SIZE];  //subtracting the length of pieceIndex
+        byte[] pieceData = new byte[msgLength - 4];  //subtracting the length of pieceIndex
         dis.read(pieceData);
         //store this pieceData in file
         myTorrentFile.reportPieceReceived(pieceIndex, pieceData);

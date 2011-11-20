@@ -1,16 +1,15 @@
 package cnt5106c.torrent.transceiver;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PipedOutputStream;
-import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+
+import cnt5106c.torrent.utils.Utilities;
 
 public class Client implements Runnable
 {
@@ -20,7 +19,9 @@ public class Client implements Runnable
     private DataInputStream dis;
 	private String serverAddress;
 	private int serverPort;
-    private PipedOutputStream pipedOutputStream = new PipedOutputStream();
+	private PipedOutputStream pipedOutputStream = new PipedOutputStream();
+	private DataOutputStream pipeDos = new DataOutputStream(pipedOutputStream); 
+    
 	
     /**
      * This ctor is generally used when this peer initiates the connection with other peers.
@@ -58,13 +59,15 @@ public class Client implements Runnable
 	private void receive() throws IOException
 	{
 	    //always read first 4 bytes, then read equivalent to the length indicated by those 4 bytes
-	    int length = dis.readInt();
-	    pipedOutputStream.write(length);
+	    byte[] lengthBuffer = new byte[4];
+	    dis.readFully(lengthBuffer);
+	    int length = Utilities.getIntegerFromByteArray(lengthBuffer, 0);
+	    pipeDos.writeInt(length);
 	    
 	    //now read the data indicated by length and write it to buffer
 	    byte[] buffer = new byte[length];
 	    dis.readFully(buffer);
-	    pipedOutputStream.write(buffer);
+	    pipeDos.write(buffer);
 	}
 	
 	void receive(int preknownDataLength) throws EOFException, IOException
@@ -72,41 +75,8 @@ public class Client implements Runnable
 	    byte[] buffer = new byte[preknownDataLength];
 	    //using read fully here to completely download the data before placing it in buffer
 	    dis.readFully(buffer);
-	    pipedOutputStream.write(buffer);
+	    pipeDos.write(buffer);
 	}
-	
-	public void talkOnSocket() throws IOException
-	{
-	    if(me == null)
-	    {
-	        //TODO log error and return
-	        return;
-	    }
-	    
-	    try
-	    {
-    	    BufferedReader socketReader = new BufferedReader(new InputStreamReader(me.getInputStream()));
-    	    PrintWriter socketWriter = new PrintWriter(me.getOutputStream(), true);
-    	    BufferedReader userInputReader = new BufferedReader(new InputStreamReader(System.in));
-    	    while(true)
-    	    {
-    	        String input = userInputReader.readLine();
-    	        socketWriter.println(input);
-    	        String response = socketReader.readLine();
-    	        System.out.println("Server says: " + response);
-    	        if(input.equalsIgnoreCase("bye"))
-    	        {
-    	            break;
-    	        }
-    	    }
-	    }
-	    finally
-	    {
-	        if(me != null)
-	            me.close();
-	    }
-	}
-
     
 	@Override
     public void run()

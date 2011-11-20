@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project BitTorrent">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+        <jar destfile="/home/arpit/workspace-helios/BitTorrent/bit.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="cnt5106c.torrent.startup.PeerStarter"/>
+                <attribute name="Class-Path" value="."/>
+            </manifest>
+            <fileset dir="/home/arpit/workspace-helios/BitTorrent/bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/arpit/eclipse/plugins/org.junit_4.8.1.v4_8_1_v20100427-1100/junit.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/arpit/eclipse/plugins/org.hamcrest.core_1.1.0.v20090501071000.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="/home/arpit/workspace-helios/BitTorrent/log4j-1.2.16.jar"/>
+        </jar>
+    </target>
+</project>

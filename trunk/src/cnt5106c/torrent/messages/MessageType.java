@@ -47,4 +47,9 @@ public enum MessageType implements Serializable
         
         return null;
     }
+    
+    public static int getMessageTypeLength()
+    {
+        return 4;
+    }
 }

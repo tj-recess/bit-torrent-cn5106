@@ -13,7 +13,7 @@ public class ActualMessage extends Message
 	
 	public ActualMessage(MessageType msgType) throws InterruptedException, IOException
 	{
-		this(Integer.SIZE, msgType);
+		this(MessageType.getMessageTypeLength(), msgType);
 	}
 	
 	public ActualMessage(int msgLength, MessageType msgType) throws InterruptedException, IOException
