@@ -15,7 +15,7 @@ public class PeerStarter
 {
     private final String currentDirectoryPath = System.getProperty("user.dir");
     private final String peerConfigFileName = currentDirectoryPath + "/PeerInfo.cfg";
-    private static final Logger eventLogger = Logger.getLogger("");
+    private static final Logger programErrorLogger = Logger.getLogger("");
     
     public static void main(String[] args)
     {
@@ -44,7 +44,7 @@ public class PeerStarter
             PeerConfig aConfig = peerInfoMap.get(peerID);
             String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath + "; java -cp ../../log4j-1.2.16.jar:. cnt5106c.torrent.peer.Peer " + peerID;
             System.out.println(cmd);
-            eventLogger.info(cmd);
+            programErrorLogger.info(cmd);
             Runtime.getRuntime().exec(cmd);
         }
     }
