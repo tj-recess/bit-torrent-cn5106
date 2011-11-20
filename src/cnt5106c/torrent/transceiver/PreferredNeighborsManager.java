@@ -17,7 +17,7 @@ public class PreferredNeighborsManager implements Runnable
     {
         this.myTransceiver = myTransceiver;
         this.preferredPeerIDSet= new TreeSet<Integer>();
-        this.preferredPeerIDSet.addAll(myTransceiver.getAllPeerIDList());
+        //this.preferredPeerIDSet.addAll(myTransceiver.getAllPeerIDList());
     }
 
     public void run()
@@ -70,9 +70,12 @@ public class PreferredNeighborsManager implements Runnable
             }
         });
         
-        Set<Integer> newPreferredPeersList = new TreeSet<Integer>();
+        Set<Integer> newPreferredPeersSet = new TreeSet<Integer>();
+        int count = peerDownloadRatesList.size() < myTransceiver.NUM_PREFERRED_NEIGHBORS ? 
+                peerDownloadRatesList.size() : myTransceiver.NUM_PREFERRED_NEIGHBORS;
+                
         //now find preferred peers and take action
-        for(int i = 0; i < myTransceiver.NUM_PREFERRED_NEIGHBORS; i++)
+        for(int i = 0; i < count; i++)
         {
             int peerID = peerDownloadRatesList.get(i)[0];
             if(!preferredPeerIDSet.contains(peerID))
@@ -81,13 +84,13 @@ public class PreferredNeighborsManager implements Runnable
                 myTransceiver.reportUnchokedPeer(peerID);
             }
             //add this client to new preferred list
-            newPreferredPeersList.add(peerID);
+            newPreferredPeersSet.add(peerID);
         }
         
         //now go through old preferred neighbors and send choke to those who are not preferred now
         for(Integer peerID : this.preferredPeerIDSet)
         {
-            if(!newPreferredPeersList.contains(peerID))
+            if(!newPreferredPeersSet.contains(peerID))
             {
                 //report to transceiver
                 myTransceiver.reportChokedPeer(peerID);
@@ -95,15 +98,18 @@ public class PreferredNeighborsManager implements Runnable
         }
         
         //finally replace old list with new preferred peers list
-        this.preferredPeerIDSet = newPreferredPeersList;
+        this.preferredPeerIDSet = newPreferredPeersSet;
         
-        // print this comma separated list in event logger
-        String commaSeparatedList = "";
-        for(Integer peerID : this.preferredPeerIDSet)
+        if(preferredPeerIDSet.size() > 0)
         {
-        	commaSeparatedList += peerID;
-        	commaSeparatedList += ",";
+            // print this comma separated list in event logger
+            String commaSeparatedList = "";
+            for(Integer peerID : this.preferredPeerIDSet)
+            {
+            	commaSeparatedList += peerID;
+            	commaSeparatedList += ",";
+            }
+            myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has the preferred neighbors " + commaSeparatedList);        
         }
-        myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has the preferred neighbors " + commaSeparatedList);        
     }
 }
