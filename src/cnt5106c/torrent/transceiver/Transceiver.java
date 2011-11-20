@@ -38,7 +38,7 @@ public class Transceiver
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
     //private static final Logger logger = Logger.getLogger(Transceiver.class);
-    private static final Logger eventLogger = Logger.getLogger("PeerLogging");
+    private static final Logger eventLogger = Logger.getLogger("B");
 
     /**
      * This ctor starts server immediately in the background on the listening port 
@@ -74,6 +74,7 @@ public class Transceiver
         // start logger for this peer
         System.setProperty("peer.logfile", peerLogFileName);
         PropertyConfigurator.configure("log4j.properties");
+		eventLogger.info("Eventlogger from peer started");
     }
     
     public void start() throws SocketTimeoutException, IOException
