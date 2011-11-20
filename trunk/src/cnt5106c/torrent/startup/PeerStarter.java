@@ -15,11 +15,16 @@ public class PeerStarter
 {
     private final String currentDirectoryPath = System.getProperty("user.dir");
     private final String peerConfigFileName = currentDirectoryPath + "/PeerInfo.cfg";
-    private static final Logger programErrorLogger = Logger.getLogger("");
+    private static Logger programErrorLogger;
+    //private static final Logger programErrorLogger = Logger.getLogger("A");
     
     public static void main(String[] args)
     {
+		System.setProperty("peer.logfile", "dummy.log");
         PropertyConfigurator.configure("log4j.properties");
+		programErrorLogger = Logger.getLogger("A");
+
+		programErrorLogger.info("Logger started from main");
         PeerStarter ps = new PeerStarter();
         try
         {
