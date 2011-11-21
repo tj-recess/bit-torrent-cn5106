@@ -280,8 +280,8 @@ public class EventManager implements Runnable
         System.arraycopy(msgBytes, 0, msgHeader, 0, 28);
         if (Arrays.equals(msgBytes, "CEN5501C2008SPRING0000000000".getBytes())==false)
         {
-            debugLogger.info("Received bad handshake message (" + msgBytes + ")");
-            return;
+            debugLogger.warn("Received bad handshake message (" + msgBytes + ")");
+            //return;
         }
         
         this.myPeersID = handshakeMsg.getPeerID();
