@@ -67,6 +67,7 @@ public class Client implements Runnable
 	    byte[] buffer = new byte[length];
 	    dis.readFully(buffer);
 	    pipedOutputStream.write(buffer);
+	    pipedOutputStream.flush();
 	}
 	
 	void receive(int preknownDataLength) throws EOFException, IOException
