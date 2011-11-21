@@ -227,12 +227,13 @@ public class TorrentFile
         final int len = myFileBitmap.length;
         for(int i = 0; i < len && desiredPieceID == -1; i++)
         {
-            if((myFileBitmap[i] | peerBitmap[i]) > myFileBitmap[i])
+            if((0xFF&(int)(myFileBitmap[i] | peerBitmap[i])) >= (0xFF&(int)myFileBitmap[i]))
             {
+                //TODO : choose random piece instead of sequential
                 for(int j = 0; j < 8 && desiredPieceID == -1; j++)
                 {
                     //if peer has the piece and I don't have it, request it
-                    if((myFileBitmap[i] & (1 << j)) == 0 && (peerBitmap[i] & (1 << j)) == 1)
+                    if((myFileBitmap[i] & (1 << j)) == 0 && (peerBitmap[i] & (1 << j)) != 0)
                     {
                         int attemptedPieceIndex = i*8 + j;
                         desiredPieceID = findAndLogRequestedPiece(attemptedPieceIndex);

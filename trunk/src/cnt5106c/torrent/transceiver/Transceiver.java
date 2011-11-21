@@ -37,7 +37,7 @@ public class Transceiver
     private List<Integer> allPeerIDList;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
-    //private static final Logger debugLogger = Logger.getLogger("A");
+    private static final Logger debugLogger = Logger.getLogger("A");
     private static final Logger eventLogger = Logger.getLogger("B");
 
     /**
@@ -115,13 +115,27 @@ public class Transceiver
     {
         for (Integer aPeerID : peerIDList)
         {
-            this.peerConnectionMap.get(aPeerID).send(data);
+            if(this.peerConnectionMap.containsKey(aPeerID))
+            {
+                this.peerConnectionMap.get(aPeerID).send(data);
+            }
+            else
+            {
+                debugLogger.warn(this.myPeerID + " : No client found for peer " + aPeerID);
+            }
         }
     }
     
     public void sendMessageToPeer(int peerID, byte[] data) throws IOException
     {
-        this.peerConnectionMap.get(peerID).send(data);
+        if(this.peerConnectionMap.containsKey(peerID))
+        {
+            this.peerConnectionMap.get(peerID).send(data);
+        }
+        else
+        {
+            debugLogger.warn(this.myPeerID + " : No client found for peer " + peerID);
+        }
     }
 
     public TorrentFile getTorrentFile()
@@ -142,11 +156,13 @@ public class Transceiver
     public void reportInterestedPeer(int peerID)
     {
         this.interestedNeighbours.add(new Integer(peerID));
+        Transceiver.debugLogger.debug(this.myPeerID + " added " + peerID + " as interested neighbor.");
     }
     
     public void reportNotInterestedPeer(int peerID)
     {
         this.interestedNeighbours.remove(new Integer(peerID));
+        Transceiver.debugLogger.debug(this.myPeerID + " removed " + peerID + " as interested neighbor.");
     }
 
     /**

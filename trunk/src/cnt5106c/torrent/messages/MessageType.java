@@ -13,20 +13,19 @@ public enum MessageType implements Serializable
     request(6), 
     piece(7);
     
-    //TODO : msgType should be a byte according to project specifications
-    private int msgType;
+    private byte msgType;
 
     private MessageType(int msgType)
     {
-        this.msgType = msgType;
+        this.msgType = (byte)msgType;
     }
     
-    public int getMessageType()
+    public byte getMessageType()
     {
         return this.msgType;
     }
     
-    public static MessageType getMessageType(int value)
+    public static MessageType getMessageType(byte value)
     {
         if(value == 0)
             return MessageType.choke;
@@ -50,6 +49,6 @@ public enum MessageType implements Serializable
     
     public static int getMessageTypeLength()
     {
-        return 4;
+        return 1;
     }
 }
