@@ -1,10 +1,12 @@
 package cnt5106c.torrent.peer;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -20,7 +22,7 @@ public class TorrentFile
      */
     private Map<Integer, byte[]> peerIdToPieceBitmap;
     private Map<Integer, AtomicInteger> peerIdToPieceDownloadCount;
-    private List<Integer> piecesRequested;
+    private Set<Integer> piecesRequested;
     private FileHandler myFileHandler;
     private final String myDirectory;
     private final int myPeerID;
@@ -32,7 +34,7 @@ public class TorrentFile
         this.fileName = myCommonConfig.getFileName();
         this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
         this.peerIdToPieceDownloadCount = new ConcurrentHashMap<Integer, AtomicInteger>();
-        this.piecesRequested = new LinkedList<Integer>();
+        this.piecesRequested = new HashSet<Integer>();
         this.totalPiecesRequired = (int)Math.ceil((double)myCommonConfig.getFileSize() / myCommonConfig.getPieceSize());
         int totalBytesRequiredForPieces = (int)Math.ceil((double)totalPiecesRequired / 8);
         //initialize maps with all peerIDs (including mine) and 0s in value field
@@ -225,23 +227,40 @@ public class TorrentFile
         //check the first available piece which is not requested, if found add to requested piece list
         byte[] peerBitmap = this.peerIdToPieceBitmap.get(peerID);
         final int len = myFileBitmap.length;
-        for(int i = 0; i < len && desiredPieceID == -1; i++)
+        List<Integer> possiblePieces = new ArrayList<Integer>();
+    	// Randomize logic: Malvika
+    	// Peer A has an interesting piece
+    	// find all these interesting pieces, which are not yet requested
+    	// if(this.piecesRequested.contains(pieceIndex))
+    	// pick one out of these randomly
+        for(int i = 0; i < len; i++)
         {
             if((0xFF&(int)(myFileBitmap[i] | peerBitmap[i])) >= (0xFF&(int)myFileBitmap[i]))
             {
-                //TODO : choose random piece instead of sequential
-                for(int j = 0; j < 8 && desiredPieceID == -1; j++)
+                for(int j = 0; j < 8; j++)
                 {
                     //if peer has the piece and I don't have it, request it
                     if((myFileBitmap[i] & (1 << j)) == 0 && (peerBitmap[i] & (1 << j)) != 0)
                     {
                         int attemptedPieceIndex = i*8 + j;
                         desiredPieceID = findAndLogRequestedPiece(attemptedPieceIndex);
+                        if (desiredPieceID != -1)
+                        	possiblePieces.add(desiredPieceID);
                     }
                 }
             }
         }
-        return desiredPieceID;
+        if (possiblePieces.size() != 0)
+        {
+        	// generate a random number 0 and size of possiblePieces
+        	Random rand = new Random();
+        	int idx = rand.nextInt(possiblePieces.size());
+        	// access that element from the possiblePieces list and return
+        	int pieceIndex = possiblePieces.get(idx); 
+        	this.piecesRequested.add(pieceIndex);
+        	return pieceIndex;
+        }
+        return -1;
     }
 
     private synchronized int findAndLogRequestedPiece(int pieceIndex)
@@ -252,7 +271,7 @@ public class TorrentFile
         }
         
         //add this piece to requested piece list and return index
-        this.piecesRequested.add(pieceIndex);
+        //this.piecesRequested.add(pieceIndex);
         return pieceIndex;
     }
 
