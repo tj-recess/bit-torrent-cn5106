@@ -231,11 +231,6 @@ public class EventManager implements Runnable
             myTransceiver.reportInterestedPeer(myPeersID);
             myClient.send((new InterestedMessage()).getBytes());
         }
-        else
-        {
-//            myTransceiver.reportNotInterestedPeer(myPeersID);
-//            myClient.send((new NotInterestedMessage()).getBytes());
-        }
     }
 
     private void takeActionForNotInterestedMessage()

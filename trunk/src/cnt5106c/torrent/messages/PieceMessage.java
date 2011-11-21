@@ -12,7 +12,7 @@ public class PieceMessage extends PayloadMessage
     public PieceMessage(int pieceIndex, byte[] data) throws IOException, InterruptedException
     {
         //the length in super(...) call indicates length of pieceIndex + data
-        super(data.length, MessageType.piece);
+        super(data.length + 4, MessageType.piece);
         ByteArrayOutputStream baos = Utilities.getStreamHandle();
         baos.write(super.message);
         baos.write(Utilities.getBytes(pieceIndex));
