@@ -18,6 +18,7 @@ import cnt5106c.torrent.messages.PieceMessage;
 import cnt5106c.torrent.messages.RequestMessage;
 import cnt5106c.torrent.peer.TorrentFile;
 import cnt5106c.torrent.utils.Utilities;
+import java.util.Arrays;
 
 /**
  * This class takes decision and action based on the events happening at client's receiving end.
@@ -73,7 +74,7 @@ public class EventManager implements Runnable
         myClient.receive(32);
         byte[] handshakeMsg = new byte[32];
         dis.readFully(handshakeMsg);
-        debugLogger.info(debugHeader + "Received Handshake message : " + new String(handshakeMsg));
+        debugLogger.info(debugHeader + "Received Handshake message : " + new String(handshakeMsg) + "from : " + Utilities.getIntegerFromByteArray(handshakeMsg, 28));
         return new HandshakeMessage(handshakeMsg);
     }
 
@@ -81,7 +82,8 @@ public class EventManager implements Runnable
     {
         Message msg = new HandshakeMessage(myPeerID);
         myClient.send(msg.getBytes());
-        debugLogger.info(debugHeader + "sent Handshake to peer " + myPeersID);
+        //debugLogger.info(debugHeader + "sent Handshake to peer " + myPeersID);
+        debugLogger.info(debugHeader + "Handshake sent from peer " + myPeerID);
     }
 
     private void readDataAndTakeAction() throws IOException, InterruptedException
@@ -171,7 +173,7 @@ public class EventManager implements Runnable
         
         // write this action in peer's log file
         myTransceiver.logMessage("Peer " + myOwnID + " has downloaded the piece " + pieceIndex + " from " + myPeersID 
-        						 + ". Now the number of pieves it has is " + myTorrentFile.getDownloadedPieceCount(myOwnID));
+        						 + ". Now the number of pieces it has is " + myTorrentFile.getDownloadedPieceCount(myOwnID));
         
         // check if all pieces have been downloaded
         if (myTorrentFile.getDownloadedPieceCount(myOwnID) == myTorrentFile.getTotalPieceCount())
@@ -272,11 +274,20 @@ public class EventManager implements Runnable
 
     private void processHandshake(HandshakeMessage handshakeMsg) throws IOException, InterruptedException
     {
+    	//check if handshake header is correct or not
+        byte [] msgBytes = handshakeMsg.getBytes();
+        byte [] msgHeader = new byte[28];
+        System.arraycopy(msgBytes, 0, msgHeader, 0, 28);
+        if (Arrays.equals(msgBytes, "CEN5501C2008SPRING0000000000".getBytes())==false)
+        {
+            debugLogger.info("Received bad handshake message (" + msgBytes + ")");
+            return;
+        }
+        
         this.myPeersID = handshakeMsg.getPeerID();
         //report this peer connection to Transceiver
         this.myTransceiver.reportNewClientConnection(this.myPeersID, myClient);
-        //TODO : check if handshake header is correct or not
-        
+             
         myTransceiver.logMessage("Peer " + myOwnID + " is connected from Peer " + myPeersID);
         
         //send my bitmap to others only if I have some piece

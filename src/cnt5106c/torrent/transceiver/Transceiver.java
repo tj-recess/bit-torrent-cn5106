@@ -73,7 +73,7 @@ public class Transceiver
         // Start logger for this peer
         System.setProperty("peer.logfile", peerLogFileName);
         PropertyConfigurator.configure("log4j.properties");
-		eventLogger.info("Eventlogger from peer started");
+		//eventLogger.info("Eventlogger from peer started");
     }
     
     public void start() throws SocketTimeoutException, IOException
