@@ -22,7 +22,7 @@ public class ActualMessage extends Message
         this.msgLength = msgLength;
         ByteArrayOutputStream baos = Utilities.getStreamHandle();
         baos.write(Utilities.getBytes(this.msgLength));
-        baos.write(Utilities.getBytes(msgType.getMessageType()));
+        baos.write(msgType.getMessageType());
         super.message = baos.toByteArray();
         Utilities.returnStreamHandle();
 	}

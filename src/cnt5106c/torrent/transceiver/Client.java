@@ -19,8 +19,7 @@ public class Client implements Runnable
     private DataInputStream dis;
 	private String serverAddress;
 	private int serverPort;
-	private PipedOutputStream pipedOutputStream = new PipedOutputStream();
-	private DataOutputStream pipeDos = new DataOutputStream(pipedOutputStream); 
+	private PipedOutputStream pipedOutputStream = new PipedOutputStream(); 
     
 	
     /**
@@ -62,12 +61,12 @@ public class Client implements Runnable
 	    byte[] lengthBuffer = new byte[4];
 	    dis.readFully(lengthBuffer);
 	    int length = Utilities.getIntegerFromByteArray(lengthBuffer, 0);
-	    pipeDos.writeInt(length);
+	    pipedOutputStream.write(Utilities.getBytes(length));
 	    
 	    //now read the data indicated by length and write it to buffer
 	    byte[] buffer = new byte[length];
 	    dis.readFully(buffer);
-	    pipeDos.write(buffer);
+	    pipedOutputStream.write(buffer);
 	}
 	
 	void receive(int preknownDataLength) throws EOFException, IOException
@@ -75,7 +74,7 @@ public class Client implements Runnable
 	    byte[] buffer = new byte[preknownDataLength];
 	    //using read fully here to completely download the data before placing it in buffer
 	    dis.readFully(buffer);
-	    pipeDos.write(buffer);
+	    pipedOutputStream.write(buffer);
 	}
     
 	@Override

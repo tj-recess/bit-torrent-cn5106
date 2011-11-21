@@ -72,7 +72,7 @@ public class EventManager implements Runnable
     {
         myClient.receive(32);
         byte[] handshakeMsg = new byte[32];
-        dis.read(handshakeMsg);
+        dis.readFully(handshakeMsg);
         debugLogger.info(debugHeader + "Received Handshake message : " + new String(handshakeMsg));
         return new HandshakeMessage(handshakeMsg);
     }
@@ -133,7 +133,7 @@ public class EventManager implements Runnable
         //update the bit field for myPeersID
         //read bitmap from data input stream
         byte[] bitmap = new byte[msgLength];
-        dis.read(bitmap);
+        dis.readFully(bitmap);
         myTorrentFile.setPeerBitmap(myPeersID, bitmap);
         
         //check if interested message should be sent or not interested
@@ -161,9 +161,11 @@ public class EventManager implements Runnable
     {
         //retrieve the piece from pipe
         //first retrieve the piece index
-        int pieceIndex = dis.readInt();
+        byte[] pieceIndexBuffer = new byte[4];
+        dis.readFully(pieceIndexBuffer);
+        int pieceIndex = Utilities.getIntegerFromByteArray(pieceIndexBuffer, 0);
         byte[] pieceData = new byte[msgLength - 4];  //subtracting the length of pieceIndex
-        dis.read(pieceData);
+        dis.readFully(pieceData);
         //store this pieceData in file
         myTorrentFile.reportPieceReceived(pieceIndex, pieceData);
         
@@ -202,7 +204,9 @@ public class EventManager implements Runnable
     private void takeActionForRequestMessage() throws IOException, InterruptedException
     {        
         //1. we know that requested piece index is an integer
-        int pieceIndex = dis.readInt();
+        byte[] indexBuffer = new byte[4];
+        dis.readFully(indexBuffer);
+        int pieceIndex = Utilities.getIntegerFromByteArray(indexBuffer, 0);
         //2. now read this data from file.
         byte[] dataForPiece = myTorrentFile.getPieceData(pieceIndex);
         //3. send this data as piece packet to peer
@@ -213,7 +217,7 @@ public class EventManager implements Runnable
     {
         //read payload from pipe
         byte[] payload = new byte[msgLength];
-        dis.read(payload);
+        dis.readFully(payload);
         //as we know that this payload is piece index, convert it and pass to torrent file
         int pieceIndex = Utilities.getIntegerFromByteArray(payload, 0);
         
@@ -227,8 +231,8 @@ public class EventManager implements Runnable
         }
         else
         {
-            myTransceiver.reportNotInterestedPeer(myPeersID);
-            myClient.send((new NotInterestedMessage()).getBytes());
+//            myTransceiver.reportNotInterestedPeer(myPeersID);
+//            myClient.send((new NotInterestedMessage()).getBytes());
         }
     }
 
@@ -285,9 +289,12 @@ public class EventManager implements Runnable
     private ActualMessage getNextMessage() throws IOException, InterruptedException
     {
         //rule, always read first 4 bytes (or an int) and 
+        byte[] lengthBuffer = new byte[4];
+        dis.readFully(lengthBuffer);
+        int msgLength = Utilities.getIntegerFromByteArray(lengthBuffer, 0);
         //then read the message type
-        int msgLength = dis.readInt();
-        int msgType = dis.readInt();
-        return new ActualMessage(msgLength, MessageType.getMessageType(msgType));
+        byte[] msgType = new byte[1];
+        dis.readFully(msgType);
+        return new ActualMessage(msgLength, MessageType.getMessageType(msgType[0]));
     }
 }
