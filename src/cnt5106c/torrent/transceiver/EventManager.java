@@ -57,7 +57,9 @@ public class EventManager implements Runnable
             this.processHandshake(this.receiveHandshake());
 
             //start a new thread for this client to start receiving stuff before sending anything
-            (new Thread(myClient)).start();
+            //also set timeout for myClient
+            myClient.setSoTimeout();            
+            (new Thread(myClient)).start();            
             this.readDataAndTakeAction();
         }
         catch (IOException e)
@@ -96,6 +98,8 @@ public class EventManager implements Runnable
             //now interpret the message and take action
             takeAction(msg);
         }
+        //Now, set the status of our client thread "ready to Quit" so that it can quit as well.
+        this.myClient.setReadyToQuit(true);
     }
 
     private void takeAction(ActualMessage msg) throws IOException, InterruptedException

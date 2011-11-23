@@ -37,6 +37,7 @@ public class Transceiver
     private List<Integer> allPeerIDList;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
+    private CommonConfig myCommonConfig;
     private static final Logger debugLogger = Logger.getLogger("A");
     private static final Logger eventLogger = Logger.getLogger("B");
 
@@ -52,13 +53,12 @@ public class Transceiver
      */
     public Transceiver(CommonConfig myCommonConfig, Map<Integer, PeerConfig> peerMap, int myPeerID) throws IOException 
     {
+        this.myCommonConfig = myCommonConfig;
         PeerConfig myConfig = peerMap.get(myPeerID);
         this.myHostName = myConfig.getHostName();
         this.myListenerPort = myConfig.getListeningPort();
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
-        //create torrent file for this config, pass it on to Transceiver
-        this.myTorrentFile = new TorrentFile(myPeerID, myCommonConfig, peerMap.keySet(), myConfig.hasCompleteFile());
         this.NUM_PREFERRED_NEIGHBORS = myCommonConfig.getNumPreferredNeighbours();
         this.UNCHOKING_INTERVAL = myCommonConfig.getUnchokingInterval();
         this.OPTIMISTIC_UNCHOKING_INTERVAL = myCommonConfig.getOptimisticUnchokingInterval();
@@ -80,6 +80,8 @@ public class Transceiver
     {
         (new Thread(new Server(myHostName, myListenerPort, this))).start();
         eventLogger.info("Started the server on port " + myListenerPort);
+        this.myTorrentFile = new TorrentFile(myPeerID, myCommonConfig, peerInfoMap.keySet(), 
+                this.peerInfoMap.get(myPeerID).hasCompleteFile(), this);
         this.processPeerInfoMap();
         scheduler.scheduleAtFixedRate(new PreferredNeighborsManager(this), 0, UNCHOKING_INTERVAL, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(new OptimisticNeighborManager(this), 0, OPTIMISTIC_UNCHOKING_INTERVAL, TimeUnit.SECONDS);
@@ -243,5 +245,15 @@ public class Transceiver
     public void reportNewClientConnection(int clientID, Client aClient)
     {
         this.peerConnectionMap.put(clientID, aClient);
+    }
+
+    public void signalQuit()
+    {
+        // Shutdown all the threads.
+        for(Client aClient : this.peerConnectionMap.values())
+        {
+            aClient.setReadyToQuit(true);
+        }
+        scheduler.shutdownNow();
     }
 }
