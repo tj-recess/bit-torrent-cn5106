@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import cnt5106c.torrent.config.CommonConfig;
+import cnt5106c.torrent.transceiver.Transceiver;
 
 public class TorrentFile
 {
@@ -27,9 +28,13 @@ public class TorrentFile
     private final String myDirectory;
     private final int myPeerID;
     private final int totalPiecesRequired;
+    private byte[] finalBitmap;
+    private Transceiver myTransceiver;
     
-    public TorrentFile(int myPeerID, CommonConfig myCommonConfig, Set<Integer> peerConfigIDs, boolean doIHaveFile) throws IOException
+    public TorrentFile(int myPeerID, CommonConfig myCommonConfig, Set<Integer> peerConfigIDs, 
+            boolean doIHaveFile, Transceiver myTransceiver) throws IOException
     {
+        this.myTransceiver = myTransceiver;
         this.myPeerID = myPeerID;
         this.fileName = myCommonConfig.getFileName();
         this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
@@ -51,6 +56,10 @@ public class TorrentFile
         }
         this.myFileHandler = new FileHandler(myDirectory + "/" + myCommonConfig.getFileName(),
                 myCommonConfig.getFileSize(), myCommonConfig.getPieceSize());
+        
+        //create the bitmap which will be finally required
+        this.finalBitmap = getFinalBitmap(totalPiecesRequired);
+        
         //create a dummy file on disk for storage if I don't have a complete file
         if(!doIHaveFile)
         {
@@ -62,21 +71,27 @@ public class TorrentFile
             //take action accordingly
             //TODO : check if file size matches the file-size specified in Common.cfg
             
-            //add 1 to all of your bits in myBitmap
-            byte[] myFileBitmap = this.peerIdToPieceBitmap.get(myPeerID); 
-            int len = myFileBitmap.length;
-            for(int i = 0; i < len; i++)
-            {
-                myFileBitmap[i] = (byte)0xFF;
-            }
-            int lastBytePieces = totalPiecesRequired & 7;   //totalPiecesRequired & 7 = totalPiecesRequired % 8
-            if(lastBytePieces > 0)  //then zero-filling is required
-            {
-                myFileBitmap[len - 1] = (byte)(myFileBitmap[len - 1]&0xFF >>> (8 - lastBytePieces));
-            }
+            this.peerIdToPieceBitmap.put(myPeerID, this.finalBitmap); 
         }
     }
     
+    private byte[] getFinalBitmap(int totalPiecesRequired)
+    {
+        //add 1 to all of bits in finalBitmap
+        int len = (int)Math.ceil((double)totalPiecesRequired/8);
+        byte[] finalBitmap = new byte[len];
+        for(int i = 0; i < len; i++)
+        {
+            finalBitmap[i] = (byte)0xFF;
+        }
+        int lastBytePieces = totalPiecesRequired & 7;   //totalPiecesRequired & 7 = totalPiecesRequired % 8
+        if(lastBytePieces > 0)  //then zero-filling is required
+        {
+            finalBitmap[len - 1] = (byte)(finalBitmap[len - 1]&0xFF >>> (8 - lastBytePieces));
+        }
+        return finalBitmap;
+    }
+
     /**
      * This method will update the piece map with the received piece id and store the piece on disk.
      * This method also maintains a count of how many pieces have been received so far.
@@ -89,6 +104,11 @@ public class TorrentFile
         myFileHandler.writePieceToFile(pieceID, pieceData);
         this.updateBitmapWithPiece(myFileBitmap, pieceID);
         this.peerIdToPieceDownloadCount.get(myPeerID).addAndGet(1);
+        if(canIQuit())
+        {
+            //signal Transceiver which will make every thread quit.
+            this.myTransceiver.signalQuit();
+        }
     }
 
     public byte[] getMyFileBitmap()
@@ -100,6 +120,7 @@ public class TorrentFile
     {
     	return totalPiecesRequired;
     }
+    
     /**
      * updates the peer's bitmap with the piece id received. This method also updates piece download count for given peerID
      * @param peerID ID of the peer from which this info has been received (the peer who sent have message)
@@ -109,7 +130,12 @@ public class TorrentFile
     {
         byte[] peerFileBitmap = this.peerIdToPieceBitmap.get(peerID);
         updateBitmapWithPiece(peerFileBitmap, pieceIndex);
-        this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);        
+        this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);
+        if(canIQuit())
+        {
+            //signal Transceiver which will make every thread quit.
+            this.myTransceiver.signalQuit();
+        }
     }
     
     /**
@@ -128,9 +154,9 @@ public class TorrentFile
      */
     public boolean canIQuit()
     {
-        for(AtomicInteger numPiecesDownloaded : this.peerIdToPieceDownloadCount.values())
+        for(byte[] aBitmap : this.peerIdToPieceBitmap.values())
         {
-            if(numPiecesDownloaded.get() != totalPiecesRequired)
+            if(!isBitmapFinal(aBitmap))
             {
                 return false;
             }
@@ -138,6 +164,25 @@ public class TorrentFile
         return true;
     }
     
+    /**
+     * This function evaluates some given bitmap and tells if it's same as what's finally expected when complete
+     * file is downloaded.
+     * @param aBitmap A bitmap to compare with finalBitmap (should be of same length as finalBitmap)
+     * @return true if all the bits are equal to the finalBitmap, false otherwise
+     */
+    private boolean isBitmapFinal(byte[] aBitmap)
+    {
+        int len = aBitmap.length;
+        for(int i = 0; i < len; i++)
+        {
+            if((aBitmap[i] ^ finalBitmap[i]) != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Checks if the given piece index data is contained by us.
      * @param pieceIndex The piece index which is being checked

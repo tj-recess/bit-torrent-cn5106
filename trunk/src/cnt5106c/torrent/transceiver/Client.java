@@ -4,9 +4,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.io.PipedOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 import cnt5106c.torrent.utils.Utilities;
@@ -14,13 +16,14 @@ import cnt5106c.torrent.utils.Utilities;
 public class Client implements Runnable
 {
     private static final int TIMEOUT = 5000;    //5 seconds
+    private static final int RECEIVE_TIMEOUT = 1000;    //1 second
     private Socket me;
     private DataOutputStream dos;
     private DataInputStream dis;
 	private String serverAddress;
 	private int serverPort;
-	private PipedOutputStream pipedOutputStream = new PipedOutputStream(); 
-    
+	private PipedOutputStream pipedOutputStream = new PipedOutputStream();
+    private volatile boolean readyToQuit = false;
 	
     /**
      * This ctor is generally used when this peer initiates the connection with other peers.
@@ -82,23 +85,68 @@ public class Client implements Runnable
     public void run()
     {
 	    //keep reading until client dies
-	    //TODO : know when to stop
-        try
+	    while(true)
         {
-            while(true)
+    	    try
             {
                 this.receive();
             }
-        } 
-        catch (IOException e)
+    	    catch (InterruptedIOException iioex)
+            {
+                //check if we need to continue running or not
+    	        if(this.readyToQuit)
+    	        {
+    	            //close the streams, sockets and quit
+                    try
+                    {
+                        this.closeConnections();
+                    }
+                    catch (IOException e){/*quit silently*/}
+    	            
+                    break;
+    	        }
+            }
+            catch (IOException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void closeConnections() throws IOException
+    {
+        if(this.pipedOutputStream != null)
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            this.pipedOutputStream.close();
+        }
+        if(this.dis != null)
+        {
+            this.dis.close();
+        }
+        if(this.dos != null)
+        {
+            this.dos.close();
+        }
+        if(this.me != null)
+        {
+            this.me.close();
         }
     }
 
     public PipedOutputStream getPipedOutputStream()
     {
         return this.pipedOutputStream;
+    }
+
+    public void setReadyToQuit(boolean readyToQuit)
+    {
+        this.readyToQuit = readyToQuit;
+    }
+    
+    public void setSoTimeout() throws SocketException
+    {
+        //set timeout for socket related operations (read)
+        this.me.setSoTimeout(RECEIVE_TIMEOUT);
     }
 }

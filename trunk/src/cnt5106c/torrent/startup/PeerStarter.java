@@ -47,8 +47,8 @@ public class PeerStarter
         {
             PeerConfig aConfig = peerInfoMap.get(peerID);
             String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath + "; java -cp ../../log4j-1.2.16.jar:. cnt5106c.torrent.peer.Peer " + peerID;
-            //String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath 
-            //            + "; java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=\"" + (6000 + peerID) + "\" -jar bit-peer.jar " + peerID;
+//            String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath 
+//                        + "; java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=\"" + (6000 + peerID) + "\" -jar bit-peer.jar " + peerID;
             programErrorLogger.info(cmd);
             Runtime.getRuntime().exec(cmd);
         }
