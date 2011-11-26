@@ -46,20 +46,20 @@ public class PreferredNeighborsManager implements Runnable
     private void selectPreferredNeighbors() throws IOException, InterruptedException
     {
         //calculate download rate from those neighbors which are interested in our data
-        List<int[]> peerDownloadRatesList = new ArrayList<int[]>();
+        List<double[]> peerDownloadRatesList = new ArrayList<double[]>();
         Set<Integer> interestedNeighborsList = myTransceiver.getInterestedNeighbours();
         for(Integer peerID : interestedNeighborsList)
         {
-            int[] peerIDAndRatePair = new int[2];
-            peerIDAndRatePair[0] = peerID;
-            peerIDAndRatePair[1] = myTransceiver.calculateDownloadRate(peerID);
+            double[] peerIDAndRatePair = new double[2];
+            peerIDAndRatePair[0] = (double)peerID;
+            peerIDAndRatePair[1] = myTransceiver.getDownloadRate(peerID);
             peerDownloadRatesList.add(peerIDAndRatePair);
         }
         //now sort the peers based on their download rates
-        Collections.sort(peerDownloadRatesList, new Comparator<int[]>()
+        Collections.sort(peerDownloadRatesList, new Comparator<double[]>()
         {
             @Override
-            public int compare(int[] rate1, int[] rate2)
+            public int compare(double[] rate1, double[] rate2)
             {
                 if(rate1[1] > rate2[1])
                     return 1;
@@ -77,7 +77,7 @@ public class PreferredNeighborsManager implements Runnable
         //now find preferred peers and take action
         for(int i = 0; i < count; i++)
         {
-            int peerID = peerDownloadRatesList.get(i)[0];
+            int peerID = (int)peerDownloadRatesList.get(i)[0];
             if(!preferredPeerIDSet.contains(peerID))
             {
                 //report to transceiver

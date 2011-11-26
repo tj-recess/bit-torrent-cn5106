@@ -40,6 +40,12 @@ public class OptimisticNeighborManager implements Runnable
      */
     private void selectOptimisticallyUnchokedPeer() throws IOException, InterruptedException
     {
+    	// Malvika: TODO: choke the previously optimistically unchoked peer
+    	// Here? or the end of the function?
+    	// If here, it can be picked again
+    	// If later, if this is the only one, it won't get picked!
+    	// myTransceiver.reportChokedPeer(myTransceiver.getPrevOptUnchokedPeer());
+    	
         //get interested peers and choked peers
         Set<Integer> chokedPeersSet = myTransceiver.getChokedPeers();
         List<Integer> interestedAndChoked = new LinkedList<Integer>();
@@ -52,6 +58,8 @@ public class OptimisticNeighborManager implements Runnable
             int selectedPeer = interestedAndChoked.get(rand.nextInt(interestedAndChoked.size()));
             //send unchoke message to this random peer
             myTransceiver.reportUnchokedPeer(selectedPeer);
+            // Set this peer in transceiver, so it can be choked the next time
+            myTransceiver.setPrevOptUnchokedPeer(selectedPeer);
             // Log this event
             myTransceiver.logMessage("Peer " + myTransceiver.getMyPeerID() + " has optimistically unchoked neighbor " + selectedPeer);
         }

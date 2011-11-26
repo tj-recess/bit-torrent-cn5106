@@ -1,5 +1,6 @@
 package cnt5106c.torrent.peer;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,9 +68,16 @@ public class TorrentFile
         }
         else
         {
-            //TODO : check first if file actually exists or not ????
-            //take action accordingly
-            //TODO : check if file size matches the file-size specified in Common.cfg
+            // check first if file actually exists or not
+        	// TODO: take action accordingly
+        	File tempFile = new File(myDirectory + "/" + myCommonConfig.getFileName());
+        	if (!tempFile.exists())
+        		myTransceiver.logMessage("File not found by " + myPeerID);
+            
+            // check if file size matches the file-size specified in Common.cfg
+        	// TODO: take action accordingly
+            if (tempFile.length() != myCommonConfig.getFileSize())
+            	myTransceiver.logMessage("File size is not correct, as found by " + myPeerID);
             
             this.peerIdToPieceBitmap.put(myPeerID, this.finalBitmap); 
         }
