@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,10 @@ public class Transceiver
     private int myPeerID;
     private String myHostName;
     private int myListenerPort;
+    private final int pieceSize;
+    private int prevOptUnchokedPeer;
     private ConcurrentHashMap<Integer, Client> peerConnectionMap;
+    private Map<Integer, Double> peerDownloadRate; // peer id --> download rate
     private TorrentFile myTorrentFile;
     private Set<Integer> interestedNeighbours;
     private List<Integer> allPeerIDList;
@@ -40,7 +44,7 @@ public class Transceiver
     private CommonConfig myCommonConfig;
     private static final Logger debugLogger = Logger.getLogger("A");
     private static final Logger eventLogger = Logger.getLogger("B");
-
+    
     /**
      * This ctor starts server immediately in the background on the listening port 
      * and host address provided. It also starts the client connections for the all the peers
@@ -57,12 +61,14 @@ public class Transceiver
         PeerConfig myConfig = peerMap.get(myPeerID);
         this.myHostName = myConfig.getHostName();
         this.myListenerPort = myConfig.getListeningPort();
+        this.pieceSize = myCommonConfig.getPieceSize();
         this.peerInfoMap = peerMap;
         this.myPeerID = myPeerID;
         this.NUM_PREFERRED_NEIGHBORS = myCommonConfig.getNumPreferredNeighbours();
         this.UNCHOKING_INTERVAL = myCommonConfig.getUnchokingInterval();
         this.OPTIMISTIC_UNCHOKING_INTERVAL = myCommonConfig.getOptimisticUnchokingInterval();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
+        this.peerDownloadRate = new HashMap<Integer, Double>();
         this.interestedNeighbours = new TreeSet<Integer>();
         allPeerIDList = new ArrayList<Integer>();
         //add all the peerIDs in allPeerIDList
@@ -150,7 +156,7 @@ public class Transceiver
         return this.myPeerID;
     }
     
-    void logMessage(String msg)
+    public void logMessage(String msg)
     {
     	eventLogger.info(msg);
     }
@@ -194,12 +200,26 @@ public class Transceiver
         return wastePeersList;
     }
 
-    int calculateDownloadRate(Integer peerID)
-    {
-        // TODO Auto-generated method stub
-        return 0;
+    // Malvika: New functions for download rate calculation
+    public synchronized void addOrUpdatePeerDownloadRate(Integer peerId, long elapsedTime)
+    {    	    
+        double downloadRate = (double)this.pieceSize/elapsedTime;
+        // Push this info in peerDownloadRate map
+        // update old rate, or add a new entry
+        peerDownloadRate.put(peerId, downloadRate);     
     }
-
+    
+    public double getDownloadRate(Integer peerId)
+    {
+    	// search for peerId in the map
+        // return its download rate
+        // -1, if not found
+        if(this.peerDownloadRate.containsKey(peerId))
+            return peerDownloadRate.get(peerId);
+        else
+        	return -1;
+    }
+    
     public Set<Integer> getInterestedNeighbours()
     {
         return this.interestedNeighbours;
@@ -242,6 +262,16 @@ public class Transceiver
         return this.chokedPeersSet;
     }
     
+    public Integer getPrevOptUnchokedPeer()
+    {
+    	return prevOptUnchokedPeer;
+    }
+    
+    public void setPrevOptUnchokedPeer(Integer peerId)
+    {
+    	this.prevOptUnchokedPeer = peerId;
+    }
+    
     public void reportNewClientConnection(int clientID, Client aClient)
     {
         this.peerConnectionMap.put(clientID, aClient);
@@ -255,5 +285,6 @@ public class Transceiver
             aClient.setReadyToQuit(true);
         }
         scheduler.shutdownNow();
+        //scheduler.super.shutdownNow(); // How to call its super class? shutdown the scheduler itself too
     }
 }

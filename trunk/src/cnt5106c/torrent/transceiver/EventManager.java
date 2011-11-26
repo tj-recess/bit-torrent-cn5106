@@ -35,6 +35,8 @@ public class EventManager implements Runnable
     private Transceiver myTransceiver;
     private static final Logger debugLogger = Logger.getLogger("A");
     private final String debugHeader;
+    private long downloadStartTime;
+    private long downloadStopTime;
     
     public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
     {
@@ -172,6 +174,12 @@ public class EventManager implements Runnable
         int pieceIndex = Utilities.getIntegerFromByteArray(pieceIndexBuffer, 0);
         byte[] pieceData = new byte[msgLength - 4];  //subtracting the length of pieceIndex
         dis.readFully(pieceData);
+        
+        // Malvika: stop time for this peer "myPeersID"
+        downloadStopTime = System.currentTimeMillis();
+        // update the download rate map for this peer
+        myTransceiver.addOrUpdatePeerDownloadRate(myPeersID, (downloadStopTime - downloadStartTime));
+        
         //store this pieceData in file
         myTorrentFile.reportPieceReceived(pieceIndex, pieceData);
         
@@ -269,15 +277,17 @@ public class EventManager implements Runnable
     	myTransceiver.logMessage("Peer " + myOwnID + " is choked by " + myPeersID); 
         //set the status that I am choked now
         this.amIchoked = true;
+        // Malvika: TODO: myPeersID has choked me, so I'm not getting any more data from him
+        // Set his download rate should reset to zero?
     }
 
     private void processHandshake(HandshakeMessage handshakeMsg) throws IOException, InterruptedException
     {
     	//check if handshake header is correct or not
         byte [] msgBytes = handshakeMsg.getBytes();
-        byte [] msgHeader = new byte[28];
-        System.arraycopy(msgBytes, 0, msgHeader, 0, 28);
-        if (Arrays.equals(msgBytes, "CEN5501C2008SPRING0000000000".getBytes())==false)
+        byte [] msgHeader = new byte[18];
+        System.arraycopy(msgBytes, 0, msgHeader, 0, 18);
+        if (Arrays.equals(msgBytes, "CEN5501C2008SPRING".getBytes())==false)
         {
             debugLogger.warn("Received bad handshake message (" + msgBytes + ")");
             //return;
