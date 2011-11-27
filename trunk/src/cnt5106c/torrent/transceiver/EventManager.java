@@ -189,7 +189,11 @@ public class EventManager implements Runnable
         
         // check if all pieces have been downloaded
         if (myTorrentFile.getDownloadedPieceCount(myOwnID) == myTorrentFile.getTotalPieceCount())
-        	myTransceiver.logMessage("Peer " + myOwnID + "has downloaded the complete file.");
+        {
+        	myTransceiver.logMessage("Peer " + myOwnID + " has downloaded the complete file.");
+			// Send not interested to everybody because I now have the complete file.
+			myTransceiver.sendMessageToGroup(myTransceiver.getAllPeerIDList(), new NotInterestedMessage().getBytes());
+        }
         
         // If not choked, request for more pieces
         if(!amIchoked)
