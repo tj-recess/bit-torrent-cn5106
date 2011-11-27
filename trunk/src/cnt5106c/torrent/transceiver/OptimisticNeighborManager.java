@@ -44,7 +44,10 @@ public class OptimisticNeighborManager implements Runnable
     	// Here? or the end of the function?
     	// If here, it can be picked again
     	// If later, if this is the only one, it won't get picked!
-    	// myTransceiver.reportChokedPeer(myTransceiver.getPrevOptUnchokedPeer());
+    	Integer prevOCPeer = myTransceiver.getPrevOptUnchokedPeer();
+    	myTransceiver.logMessage("{DELETE THIS} Peer " + myTransceiver.getMyPeerID() + " had old OC neighbor = " + myTransceiver.getPrevOptUnchokedPeer());
+    	if (prevOCPeer != -1)
+    		myTransceiver.reportChokedPeer(myTransceiver.getPrevOptUnchokedPeer());
     	
         //get interested peers and choked peers
         Set<Integer> chokedPeersSet = myTransceiver.getChokedPeers();
