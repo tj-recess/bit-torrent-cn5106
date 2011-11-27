@@ -29,8 +29,9 @@ public class Peer
      * @param myPeerID ID of the peer itself
      * @throws BadFileFormatException if somebody has tampered with Config files
      * @throws IOException If there is any issue while reading configuration (e.g. access rights, etc.)
+     * @throws InterruptedException 
      */
-    public Peer(int myPeerID) throws BadFileFormatException, IOException
+    public Peer(int myPeerID) throws BadFileFormatException, IOException, InterruptedException
     {
         this.myPeerID = myPeerID;
         this.fileToCommonConfigMap = new HashMap<String, CommonConfig>();
@@ -44,8 +45,9 @@ public class Peer
      * NOTE : this method will require change if we have to deal with concurrent file downloads.
      * @throws BadFileFormatException
      * @throws IOException
+     * @throws InterruptedException 
      */
-    private void startup() throws BadFileFormatException, IOException
+    private void startup() throws BadFileFormatException, IOException, InterruptedException
     {
         //read Common and Peer config        
         ConfigReader commonConfigReader = new ConfigReader(commonConfigFileName);
@@ -67,8 +69,9 @@ public class Peer
      * @throws IOException If files PeerInfo.cfg and Common.cfg are not present
      * @throws BadFileFormatException if PeerInfo.cgf or Common.cfg are not in correct format
      * @throws NumberFormatException If peerID is not an integer
+     * @throws InterruptedException 
      */
-    public static void main(String[] args) throws NumberFormatException, BadFileFormatException, IOException
+    public static void main(String[] args) throws NumberFormatException, BadFileFormatException, IOException, InterruptedException
     {
         if(args.length < 1)
         {

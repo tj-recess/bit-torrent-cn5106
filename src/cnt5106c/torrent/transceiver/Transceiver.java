@@ -8,11 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
@@ -33,14 +34,14 @@ public class Transceiver
     private String myHostName;
     private int myListenerPort;
     private final int pieceSize;
-    private Integer prevOptUnchokedPeer;
+    private AtomicInteger prevOptUnchokedPeer;
     private ConcurrentHashMap<Integer, Client> peerConnectionMap;
     private Map<Integer, Double> peerDownloadRate; // peer id --> download rate
     private TorrentFile myTorrentFile;
     private Set<Integer> interestedNeighbours;
     private List<Integer> allPeerIDList;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private Set<Integer> chokedPeersSet = new TreeSet<Integer>();
+    private Set<Integer> chokedPeersSet = new ConcurrentSkipListSet<Integer>();
     private CommonConfig myCommonConfig;
     private static final Logger debugLogger = Logger.getLogger("A");
     private static final Logger eventLogger = Logger.getLogger("B");
@@ -69,13 +70,13 @@ public class Transceiver
         this.OPTIMISTIC_UNCHOKING_INTERVAL = myCommonConfig.getOptimisticUnchokingInterval();
         this.peerConnectionMap = new ConcurrentHashMap<Integer, Client>();
         this.peerDownloadRate = new HashMap<Integer, Double>();
-        this.interestedNeighbours = new TreeSet<Integer>();
+        this.interestedNeighbours = new ConcurrentSkipListSet<Integer>();
         allPeerIDList = new ArrayList<Integer>();
         //add all the peerIDs in allPeerIDList
         allPeerIDList.addAll(this.peerInfoMap.keySet());
         
         // Initialize this to -1
-        prevOptUnchokedPeer = -1; 
+        prevOptUnchokedPeer = new AtomicInteger(-1); 
         
         // Make the log file name for this peer
         String peerLogFileName = "log_peer_" + myPeerID + ".log";
@@ -85,15 +86,17 @@ public class Transceiver
 		//eventLogger.info("Eventlogger from peer started");
     }
     
-    public void start() throws SocketTimeoutException, IOException
+    public void start() throws SocketTimeoutException, IOException, InterruptedException
     {
-        (new Thread(new Server(myHostName, myListenerPort, this))).start();
+        Thread serverThread = new Thread(new Server(myHostName, myListenerPort, this));
+        serverThread.start();
         eventLogger.info("Started the server on port " + myListenerPort);
         this.myTorrentFile = new TorrentFile(myPeerID, myCommonConfig, peerInfoMap.keySet(), 
                 this.peerInfoMap.get(myPeerID).hasCompleteFile(), this);
         this.processPeerInfoMap();
         scheduler.scheduleAtFixedRate(new PreferredNeighborsManager(this), 0, UNCHOKING_INTERVAL, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(new OptimisticNeighborManager(this), 0, OPTIMISTIC_UNCHOKING_INTERVAL, TimeUnit.SECONDS);
+//        serverThread.join();
     }
     
     /**
@@ -110,7 +113,7 @@ public class Transceiver
             {
                 //peer has already been started, try to make a connection
                 Client newClient = new Client(this.peerInfoMap.get(aPeerID).getHostName(),
-                        this.peerInfoMap.get(aPeerID).getListeningPort());
+                        this.peerInfoMap.get(aPeerID).getListeningPort(), this);
                 //now make an EventHandler (algorithm) for this client
                 EventManager anEventManager = new EventManager(newClient, this);
                 //start event manager before client starts any activity
@@ -247,10 +250,7 @@ public class Transceiver
     {
         //send choke message to this peer
         this.sendMessageToPeer(peerID, new ChokeMessage().getBytes());
-        synchronized(this)
-        {
-            this.chokedPeersSet.add(peerID);
-        }
+        this.chokedPeersSet.add(peerID);
     }
 
     /**
@@ -263,10 +263,7 @@ public class Transceiver
     {
         //send unchoke message to this peer
         this.sendMessageToPeer(peerID, new UnchokeMessage().getBytes());
-        synchronized(this)
-        {
-            this.chokedPeersSet.remove(peerID);
-        }
+        this.chokedPeersSet.remove(peerID);
     }
 
     public Set<Integer> getChokedPeers()
@@ -274,14 +271,14 @@ public class Transceiver
         return this.chokedPeersSet;
     }
     
-    public Integer getPrevOptUnchokedPeer()
+    public int getPrevOptUnchokedPeer()
     {
-    	return prevOptUnchokedPeer;
+    	return prevOptUnchokedPeer.get();
     }
     
-    public void setPrevOptUnchokedPeer(Integer peerId)
+    public void setPrevOptUnchokedPeer(int peerId)
     {
-    	this.prevOptUnchokedPeer = peerId;
+    	this.prevOptUnchokedPeer.set(peerId);
     }
     
     public void reportNewClientConnection(int clientID, Client aClient)
@@ -291,11 +288,8 @@ public class Transceiver
 
     public void signalQuit()
     {
+        debugLogger.info("Peer " + myPeerID + " : Transceiver signalled to quit.");
         // Shutdown all the threads.
-        for(Client aClient : this.peerConnectionMap.values())
-        {
-            aClient.setReadyToQuit(true);
-        }
         scheduler.shutdownNow();
         //scheduler.super.shutdownNow(); // How to call its super class? shutdown the scheduler itself too
     }

@@ -38,7 +38,7 @@ public class Server implements Runnable
                 aClientSocket = this.serverSocket.accept();
                 Server.acitivityLogger.info("Server received a client request!");
                 //start an Event manager in another thread for further communication
-                (new Thread(new EventManager(new Client(aClientSocket), myTransceiver))).start();
+                (new Thread(new EventManager(new Client(aClientSocket, myTransceiver), myTransceiver))).start();
             }
             catch(InterruptedIOException iioex)
             {
