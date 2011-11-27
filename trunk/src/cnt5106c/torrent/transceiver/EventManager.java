@@ -283,6 +283,7 @@ public class EventManager implements Runnable
         this.amIchoked = true;
         // Malvika: TODO: myPeersID has choked me, so I'm not getting any more data from him
         // Set his download rate should reset to zero?
+		myTransceiver.resetPeerDownloadRate(myPeersID);
     }
 
     private void processHandshake(HandshakeMessage handshakeMsg) throws IOException, InterruptedException

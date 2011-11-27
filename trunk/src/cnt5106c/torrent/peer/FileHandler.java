@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 /**
  * This class owns the functionality of inserting or retrieving chunks for file transfer and organizing it on the 
@@ -18,7 +20,8 @@ public class FileHandler
     private int myFileSize;    
     private int myPieceSize;
     private final int CHUNK_SIZE = 1 << 26; //file written in terms of 64 MB chunks
-    
+    private static final Logger debugLogger = Logger.getLogger("A");
+
     public FileHandler(String filePath, int fileSize, int pieceSize) throws FileNotFoundException
     {
         this.myFile = new File(filePath);
@@ -74,10 +77,17 @@ public class FileHandler
      */
     public byte[] getPieceFromFile(int pieceID) throws IOException
     {
-        byte[] buffer = new byte[myPieceSize];
         RandomAccessFile raf = new RandomAccessFile(myFile, "r");
         //find the position which is max(0, just before piece starts)
-        raf.seek(Math.max((pieceID - 1)*myPieceSize, 0));
+        raf.seek(Math.max(pieceID*myPieceSize, 0));
+        
+        byte[] buffer;
+        long remainingBytes = raf.length() - (pieceID*myPieceSize);
+        if (remainingBytes < myPieceSize)
+        	buffer = new byte[(int)remainingBytes];
+        else
+        	buffer = new byte[myPieceSize];
+        //debugLogger.warn("Piece ID = " + pieceID + " remainingBytes = " + remainingBytes + " file size = " + raf.length() + " position = " + pieceID*myPieceSize);
         raf.read(buffer);
         return buffer;
     }
@@ -95,7 +105,8 @@ public class FileHandler
     public void writePieceToFile(int pieceID, byte[] pieceData) throws IOException
     {
         RandomAccessFile raf = new RandomAccessFile(this.myFile, "rw");
-        raf.seek(Math.max((pieceID -1)*myPieceSize, 0));
+        raf.seek(Math.max(pieceID *myPieceSize, 0));
+        //debugLogger.warn("Piece ID = " + pieceID + " file size = " + raf.length() + " position = " + pieceID*myPieceSize);
         raf.write(pieceData);
         raf.close();
     }    

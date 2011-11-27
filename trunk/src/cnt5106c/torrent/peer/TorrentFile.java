@@ -260,7 +260,7 @@ public class TorrentFile
             //logic : if peer has anything more than us, then ORing the two bitmaps will give more 1s than existing
             //e.g. my = 01101100, peer = 11101100 => my | peer = 11101100. Clearly, (my|peer) > my
             //casting to int and & with 0xFF because 11111111 is treated as -1 if considered byte
-            if((0xFF&(int)(myFileBitmap[i] | peerFileBitmap[i])) >= (0xFF&(int)myFileBitmap[i]))
+            if((0xFF&(int)(myFileBitmap[i] | peerFileBitmap[i])) > (0xFF&(int)myFileBitmap[i]))
             {
                 return true;
             }
