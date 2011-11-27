@@ -33,7 +33,7 @@ public class Transceiver
     private String myHostName;
     private int myListenerPort;
     private final int pieceSize;
-    private int prevOptUnchokedPeer;
+    private Integer prevOptUnchokedPeer;
     private ConcurrentHashMap<Integer, Client> peerConnectionMap;
     private Map<Integer, Double> peerDownloadRate; // peer id --> download rate
     private TorrentFile myTorrentFile;
@@ -73,6 +73,9 @@ public class Transceiver
         allPeerIDList = new ArrayList<Integer>();
         //add all the peerIDs in allPeerIDList
         allPeerIDList.addAll(this.peerInfoMap.keySet());
+        
+        // Initialize this to -1
+        prevOptUnchokedPeer = -1; 
         
         // Make the log file name for this peer
         String peerLogFileName = "log_peer_" + myPeerID + ".log";
@@ -206,7 +209,8 @@ public class Transceiver
         double downloadRate = (double)this.pieceSize/elapsedTime;
         // Push this info in peerDownloadRate map
         // update old rate, or add a new entry
-        peerDownloadRate.put(peerId, downloadRate);     
+        peerDownloadRate.put(peerId, downloadRate);
+        eventLogger.info("{DELETE THIS} Peer " + myPeerID + " calculate download rate = " + downloadRate + " for peer " + peerId);
     }
     
     public double getDownloadRate(Integer peerId)
