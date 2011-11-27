@@ -17,8 +17,15 @@ public class PeerStarter
     private static Logger programErrorLogger;
     //private static final Logger programErrorLogger = Logger.getLogger("A");
     
+    private enum Mode { run, debug; }
+    
     public static void main(String[] args)
     {
+        Mode mode = Mode.run;
+        if(args.length > 0 && args[0].equals("debug"))
+        {
+            mode = Mode.debug;
+        }
 		System.setProperty("peer.logfile", "dummy.log");
         PropertyConfigurator.configure("log4j.properties");
 		programErrorLogger = Logger.getLogger("A");
@@ -27,7 +34,7 @@ public class PeerStarter
         PeerStarter ps = new PeerStarter();
         try
         {
-            ps.startAllPeers();
+            ps.startAllPeers(mode);
         } catch (BadFileFormatException e)
         {
             // TODO Auto-generated catch block
@@ -39,16 +46,24 @@ public class PeerStarter
         }
     }
 
-    public void startAllPeers() throws BadFileFormatException, IOException
+    public void startAllPeers(Mode modeOfRun) throws BadFileFormatException, IOException
     {
         ConfigReader cr = new ConfigReader(peerConfigFileName);
         Map<Integer, PeerConfig> peerInfoMap = cr.getPeerConfigMap();
         for(Integer peerID : peerInfoMap.keySet())
         {
             PeerConfig aConfig = peerInfoMap.get(peerID);
-            String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath + "; java -cp ../../log4j-1.2.16.jar:. cnt5106c.torrent.peer.Peer " + peerID;
-//            String cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath 
-//                        + "; java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=\"" + (6000 + peerID) + "\" -jar bit-peer.jar " + peerID;
+            String cmd = "";
+            if(modeOfRun == Mode.run)
+            {
+                cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath + "; java -cp log4j-1.2.16.jar:. cnt5106c.torrent.peer.Peer " + peerID;
+            }
+            else
+            {
+                cmd = "ssh " + aConfig.getHostName() + " cd " + currentDirectoryPath 
+                    + "; java -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=\"" + (6000 + peerID) + "\" -jar bit-peer.jar " + peerID;
+            }
+            
             programErrorLogger.info(cmd);
             Runtime.getRuntime().exec(cmd);
         }

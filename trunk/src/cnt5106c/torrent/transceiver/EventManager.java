@@ -93,15 +93,13 @@ public class EventManager implements Runnable
     private void readDataAndTakeAction() throws IOException, InterruptedException
     {        
         //now always receive bytes and take action
-        while(!myTorrentFile.canIQuit())
+        while(true)
         {
             debugLogger.debug(debugHeader + "waiting to receive next message");
             ActualMessage msg = getNextMessage();
             //now interpret the message and take action
             takeAction(msg);
         }
-        //Now, set the status of our client thread "ready to Quit" so that it can quit as well.
-        this.myClient.setReadyToQuit(true);
     }
 
     private void takeAction(ActualMessage msg) throws IOException, InterruptedException

@@ -5,14 +5,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 
 /**
  * This class owns the functionality of inserting or retrieving chunks for file transfer and organizing it on the 
  * disk.
- * @author arpit@cise.ufl.edu
- *
  */
 public class FileHandler
 {
@@ -20,7 +16,6 @@ public class FileHandler
     private int myFileSize;    
     private int myPieceSize;
     private final int CHUNK_SIZE = 1 << 26; //file written in terms of 64 MB chunks
-    private static final Logger debugLogger = Logger.getLogger("A");
 
     public FileHandler(String filePath, int fileSize, int pieceSize) throws FileNotFoundException
     {

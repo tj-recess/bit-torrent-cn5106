@@ -3,7 +3,6 @@ package cnt5106c.torrent.peer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,7 @@ public class TorrentFile
         this.myTransceiver = myTransceiver;
         this.myPeerID = myPeerID;
         this.fileName = myCommonConfig.getFileName();
-        this.peerIdToPieceBitmap = new HashMap<Integer, byte[]>();
+        this.peerIdToPieceBitmap = new ConcurrentHashMap<Integer, byte[]>();
         this.peerIdToPieceDownloadCount = new ConcurrentHashMap<Integer, AtomicInteger>();
         this.piecesRequested = new HashSet<Integer>();
         this.totalPiecesRequired = (int)Math.ceil((double)myCommonConfig.getFileSize() / myCommonConfig.getPieceSize());
@@ -108,10 +107,14 @@ public class TorrentFile
      */
     public void reportPieceReceived(int pieceID, byte[] pieceData) throws IOException
     {
-        byte[] myFileBitmap = this.peerIdToPieceBitmap.get(myPeerID);
         myFileHandler.writePieceToFile(pieceID, pieceData);
-        this.updateBitmapWithPiece(myFileBitmap, pieceID);
-        this.peerIdToPieceDownloadCount.get(myPeerID).addAndGet(1);
+        synchronized (this)
+        {
+            byte[] myFileBitmap = this.peerIdToPieceBitmap.get(myPeerID);
+            this.updateBitmapWithPiece(myFileBitmap, pieceID);
+            this.peerIdToPieceDownloadCount.get(myPeerID).addAndGet(1);   
+        }
+        
         if(canIQuit())
         {
             //signal Transceiver which will make every thread quit.
@@ -136,9 +139,13 @@ public class TorrentFile
      */
     public void reportPeerPieceAvailablity(int peerID, int pieceIndex)
     {
-        byte[] peerFileBitmap = this.peerIdToPieceBitmap.get(peerID);
-        updateBitmapWithPiece(peerFileBitmap, pieceIndex);
-        this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);
+        synchronized(this)
+        {
+            byte[] peerFileBitmap = this.peerIdToPieceBitmap.get(peerID);
+            updateBitmapWithPiece(peerFileBitmap, pieceIndex);
+            this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);
+        }
+        
         if(canIQuit())
         {
             //signal Transceiver which will make every thread quit.
@@ -288,7 +295,7 @@ public class TorrentFile
     	// pick one out of these randomly
         for(int i = 0; i < len; i++)
         {
-            if((0xFF&(int)(myFileBitmap[i] | peerBitmap[i])) >= (0xFF&(int)myFileBitmap[i]))
+            if((0xFF&(int)(myFileBitmap[i] | peerBitmap[i])) > (0xFF&(int)myFileBitmap[i]))
             {
                 for(int j = 0; j < 8; j++)
                 {

@@ -11,6 +11,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
+import org.apache.log4j.Logger;
+
 import cnt5106c.torrent.utils.Utilities;
 
 public class Client implements Runnable
@@ -23,7 +25,8 @@ public class Client implements Runnable
 	private String serverAddress;
 	private int serverPort;
 	private PipedOutputStream pipedOutputStream = new PipedOutputStream();
-    private volatile boolean readyToQuit = false;
+    private Transceiver myTransceiver;
+    private static final Logger debugLogger = Logger.getLogger("A");
 	
     /**
      * This ctor is generally used when this peer initiates the connection with other peers.
@@ -32,7 +35,7 @@ public class Client implements Runnable
      * @throws SocketTimeoutException if server couldn't not be contacted within specified time, default = 5 seconds
      * @throws IOException
      */
-	public Client(String serverAddress, int serverPort) throws SocketTimeoutException, IOException
+	public Client(String serverAddress, int serverPort, Transceiver myTransceiver) throws SocketTimeoutException, IOException
 	{
 	    this.serverAddress = serverAddress;
 	    this.serverPort = serverPort;
@@ -41,14 +44,16 @@ public class Client implements Runnable
 	    this.me.connect(new InetSocketAddress(this.serverAddress, this.serverPort), TIMEOUT);
 	    this.dos = new DataOutputStream(me.getOutputStream());
         this.dis = new DataInputStream(me.getInputStream());
+        this.myTransceiver = myTransceiver;
         System.out.println("Client: connected to server now...");
 	}
 	
-	public Client(Socket aSocket) throws IOException
+	public Client(Socket aSocket, Transceiver myTransceiver) throws IOException
 	{
 	    this.me = aSocket;
 	    this.dos = new DataOutputStream(me.getOutputStream());
         this.dis = new DataInputStream(me.getInputStream());
+        this.myTransceiver = myTransceiver;
         System.out.println("Client: connected to server now...");
 	}
 	
@@ -94,7 +99,7 @@ public class Client implements Runnable
     	    catch (InterruptedIOException iioex)
             {
                 //check if we need to continue running or not
-    	        if(this.readyToQuit)
+    	        if(myTransceiver.getTorrentFile().canIQuit())
     	        {
     	            //close the streams, sockets and quit
                     try
@@ -108,8 +113,8 @@ public class Client implements Runnable
             }
             catch (IOException e)
             {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                debugLogger.fatal("Client running on port : " + this.me.getPort() + " got fatal exception!", e);
+                break;
             }
         }
     }
@@ -137,11 +142,6 @@ public class Client implements Runnable
     public PipedOutputStream getPipedOutputStream()
     {
         return this.pipedOutputStream;
-    }
-
-    public void setReadyToQuit(boolean readyToQuit)
-    {
-        this.readyToQuit = readyToQuit;
     }
     
     public void setSoTimeout() throws SocketException
