@@ -212,6 +212,14 @@ public class Transceiver
         peerDownloadRate.put(peerId, downloadRate);
         eventLogger.info("{DELETE THIS} Peer " + myPeerID + " calculate download rate = " + downloadRate + " for peer " + peerId);
     }
+
+	// Reset download rate to 0
+    public synchronized void resetPeerDownloadRate(Integer peerId)
+    {          
+        // update old rate, or add a new entry
+        peerDownloadRate.put(peerId, 0.0);
+        eventLogger.info("{DELETE THIS} Peer " + myPeerID + " reset download rate to 0 for peer " + peerId); 
+    }
     
     public double getDownloadRate(Integer peerId)
     {
