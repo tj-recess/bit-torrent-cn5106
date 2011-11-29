@@ -1,6 +1,12 @@
 package cnt5106c.torrent.startup;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -43,11 +49,19 @@ public class PeerStarter
         {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        }
+        } catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
-    public void startAllPeers(Mode modeOfRun) throws BadFileFormatException, IOException
+    public void startAllPeers(Mode modeOfRun) throws BadFileFormatException, IOException, InterruptedException
     {
+    	// Write a new file (to check file transfer completion)
+    	String fileName = currentDirectoryPath + "/XferDone.sh";
+    	BufferedWriter finalFile = new BufferedWriter(new FileWriter(new File(fileName), true));
+    	
+		// now ssh to all remote peers
         ConfigReader cr = new ConfigReader(peerConfigFileName);
         Map<Integer, PeerConfig> peerInfoMap = cr.getPeerConfigMap();
         for(Integer peerID : peerInfoMap.keySet())
@@ -66,6 +80,33 @@ public class PeerStarter
             
             programErrorLogger.info(cmd);
             Runtime.getRuntime().exec(cmd);
+            
+            // Make brand new javakiller.sh --> and hide this somehow so TAs don't see it (if we care)
+            String killCmd = "ssh " + aConfig.getHostName() + " skill java";
+            finalFile.write(killCmd);
+            finalFile.newLine();            
+        }
+
+        finalFile.close();
+        // Make it executable
+        Runtime.getRuntime().exec("chmod 777 " + fileName);
+        // See if all transfer done
+        String output = "";        
+        String hosts = Integer.toString(peerInfoMap.size()-1);	// one peer already has the file
+        while (true)
+        {  
+            Process process = Runtime.getRuntime().exec(new String[] {"/bin/bash", "-c", "grep complete *.log | wc -l"});
+			process.waitFor();
+			BufferedReader brdr = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            output = brdr.readLine();
+            //System.out.println(output); 	//--> checks how many files downloaded
+        	if (output != null && output.compareTo(hosts) == 0)
+        	{
+        		// Do the cleanup
+        		Runtime.getRuntime().exec("./XferDone.sh");
+        		break;
+        	}
+			Thread.sleep(5000);	// sleep for 5 seconds
         }
     }
 }

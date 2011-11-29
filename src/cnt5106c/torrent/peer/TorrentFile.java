@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import cnt5106c.torrent.config.CommonConfig;
 import cnt5106c.torrent.transceiver.Transceiver;
@@ -39,7 +40,7 @@ public class TorrentFile
         this.fileName = myCommonConfig.getFileName();
         this.peerIdToPieceBitmap = new ConcurrentHashMap<Integer, byte[]>();
         this.peerIdToPieceDownloadCount = new ConcurrentHashMap<Integer, AtomicInteger>();
-        this.piecesRequested = new HashSet<Integer>();
+        this.piecesRequested = new ConcurrentSkipListSet<Integer>();
         this.totalPiecesRequired = (int)Math.ceil((double)myCommonConfig.getFileSize() / myCommonConfig.getPieceSize());
         int totalBytesRequiredForPieces = (int)Math.ceil((double)totalPiecesRequired / 8);
         //initialize maps with all peerIDs (including mine) and 0s in value field
