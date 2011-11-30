@@ -22,7 +22,6 @@ import java.util.Arrays;
 
 /**
  * This class takes decision and action based on the events happening at client's receiving end.
- * @author arpit
  */
 public class EventManager implements Runnable
 {
@@ -279,7 +278,7 @@ public class EventManager implements Runnable
     	myTransceiver.logMessage("Peer " + myOwnID + " is choked by " + myPeersID); 
         //set the status that I am choked now
         this.amIchoked = true;
-        // Malvika: TODO: myPeersID has choked me, so I'm not getting any more data from him
+        // myPeersID has choked me, so I'm not getting any more data from him
         // Set his download rate should reset to zero?
 		myTransceiver.resetPeerDownloadRate(myPeersID);
     }
@@ -292,7 +291,7 @@ public class EventManager implements Runnable
         System.arraycopy(msgBytes, 0, msgHeader, 0, 18);
         if (Arrays.equals(msgBytes, "CEN5501C2008SPRING".getBytes())==false)
         {
-            debugLogger.warn("Received bad handshake message (" + msgBytes + ")");
+            debugLogger.warn("Received unidentified handshake message (" + msgBytes + ")");
             //return;
         }
         

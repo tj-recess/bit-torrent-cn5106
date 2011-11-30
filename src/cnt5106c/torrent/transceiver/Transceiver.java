@@ -213,7 +213,6 @@ public class Transceiver
         // Push this info in peerDownloadRate map
         // update old rate, or add a new entry
         peerDownloadRate.put(peerId, downloadRate);
-        eventLogger.info("{DELETE THIS} Peer " + myPeerID + " calculate download rate = " + downloadRate + " for peer " + peerId);
     }
 
 	// Reset download rate to 0
@@ -221,7 +220,6 @@ public class Transceiver
     {          
         // update old rate, or add a new entry
         peerDownloadRate.put(peerId, 0.0);
-        eventLogger.info("{DELETE THIS} Peer " + myPeerID + " reset download rate to 0 for peer " + peerId); 
     }
     
     public double getDownloadRate(Integer peerId)

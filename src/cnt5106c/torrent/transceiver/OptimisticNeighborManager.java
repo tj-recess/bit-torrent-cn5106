@@ -40,12 +40,11 @@ public class OptimisticNeighborManager implements Runnable
      */
     private void selectOptimisticallyUnchokedPeer() throws IOException, InterruptedException
     {
-    	// Malvika: TODO: choke the previously optimistically unchoked peer
+    	// choke the previously optimistically unchoked peer
     	// Here? or the end of the function?
     	// If here, it can be picked again
     	// If later, if this is the only one, it won't get picked!
     	Integer prevOCPeer = myTransceiver.getPrevOptUnchokedPeer();
-    	myTransceiver.logMessage("{DELETE THIS} Peer " + myTransceiver.getMyPeerID() + " had old OC neighbor = " + myTransceiver.getPrevOptUnchokedPeer());
     	if (prevOCPeer != -1)
     		myTransceiver.reportChokedPeer(myTransceiver.getPrevOptUnchokedPeer());
     	
