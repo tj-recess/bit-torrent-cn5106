@@ -111,7 +111,6 @@ public class Transceiver
         {
             if(aPeerID < myPeerID)
             {
-                eventLogger.info("{DELTE THIS} Peer " + myPeerID + " TRIES to make a connection with Peer " + aPeerID);
                 //peer has already been started, try to make a connection
                 Client newClient = new Client(this.peerInfoMap.get(aPeerID).getHostName(),
                         this.peerInfoMap.get(aPeerID).getListeningPort(), this);

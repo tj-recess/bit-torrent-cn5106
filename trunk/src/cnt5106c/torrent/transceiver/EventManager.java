@@ -205,9 +205,6 @@ public class EventManager implements Runnable
         //send have message to every one to notify about this piece received
         myTransceiver.sendMessageToGroup(myTransceiver.getAllPeerIDList(), (new HaveMessage(pieceIndex)).getBytes());
         
-        /////////////////////////
-        myTransceiver.logMessage("{DELETE THIS} Peer " + myOwnID + " sending have message to " + myTransceiver.getAllPeerIDList().toString());
-        
         //after receiving the piece check if you need to send not-interested message to any of the peers
         myTransceiver.sendMessageToGroup(myTransceiver.computeAndGetWastePeersList(), new NotInterestedMessage().getBytes());
     }
