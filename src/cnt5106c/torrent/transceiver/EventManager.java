@@ -60,7 +60,7 @@ public class EventManager implements Runnable
             //start a new thread for this client to start receiving stuff before sending anything
             //also set timeout for myClient
             myClient.setSoTimeout();            
-            (new Thread(myClient)).start();            
+            (new Thread(myClient)).start();
             this.readDataAndTakeAction();
         }
         catch (IOException e)
@@ -94,7 +94,7 @@ public class EventManager implements Runnable
         //now always receive bytes and take action
         while(true)
         {
-            debugLogger.debug(debugHeader + "waiting to receive next message");
+//            debugLogger.debug(debugHeader + "waiting to receive next message");
             ActualMessage msg = getNextMessage();
             //now interpret the message and take action
             takeAction(msg);
@@ -104,7 +104,7 @@ public class EventManager implements Runnable
     private void takeAction(ActualMessage msg) throws IOException, InterruptedException
     {
         int payloadLength = msg.getMessageLength() - MessageType.getMessageTypeLength();  //removing  the size of message type
-        debugLogger.debug(debugHeader + "Received msg of length " + payloadLength);
+//        debugLogger.debug(debugHeader + "Received msg of length " + payloadLength);
         switch(msg.getMsgType())
         {
         case choke:
@@ -204,6 +204,10 @@ public class EventManager implements Runnable
         }
         //send have message to every one to notify about this piece received
         myTransceiver.sendMessageToGroup(myTransceiver.getAllPeerIDList(), (new HaveMessage(pieceIndex)).getBytes());
+        
+        /////////////////////////
+        myTransceiver.logMessage("{DELETE THIS} Peer " + myOwnID + " sending have message to " + myTransceiver.getAllPeerIDList().toString());
+        
         //after receiving the piece check if you need to send not-interested message to any of the peers
         myTransceiver.sendMessageToGroup(myTransceiver.computeAndGetWastePeersList(), new NotInterestedMessage().getBytes());
     }
@@ -302,7 +306,7 @@ public class EventManager implements Runnable
         myTransceiver.logMessage("Peer " + myOwnID + " is connected from Peer " + myPeersID);
         
         //send my bitmap to others only if I have some piece
-        if(myTorrentFile.doIHaveAnyPiece())
+//        if(myTorrentFile.doIHaveAnyPiece())
         {
             myClient.send((new BitfieldMessage(myTorrentFile.getMyFileBitmap())).getBytes());
         }
