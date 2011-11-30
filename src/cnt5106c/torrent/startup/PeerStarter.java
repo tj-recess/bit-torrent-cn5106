@@ -118,5 +118,6 @@ public class PeerStarter
         	}
 			Thread.sleep(5000);	// sleep for 5 seconds
         }
+		Runtime.getRuntime().exec("rm -rf " + fileName);
     }
 }
