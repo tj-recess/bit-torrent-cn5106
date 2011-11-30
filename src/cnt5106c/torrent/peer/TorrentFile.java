@@ -69,15 +69,19 @@ public class TorrentFile
         else
         {
             // check first if file actually exists or not
-        	// TODO: take action accordingly
         	File tempFile = new File(myDirectory + "/" + myCommonConfig.getFileName());
         	if (!tempFile.exists())
-        		myTransceiver.logMessage("File not found by " + myPeerID);
+			{
+        		myTransceiver.logMessage("FATAL_ERROR: File not found by " + myPeerID);
+				System.exit(0);
+			}
             
             // check if file size matches the file-size specified in Common.cfg
-        	// TODO: take action accordingly
             if (tempFile.length() != myCommonConfig.getFileSize())
-            	myTransceiver.logMessage("File size is not correct, as found by " + myPeerID);
+			{
+            	myTransceiver.logMessage("FATAL_ERROR: File size is not correct, as found by " + myPeerID);
+				System.exit(0);
+			}
             
             this.peerIdToPieceBitmap.put(myPeerID, this.finalBitmap); 
         }

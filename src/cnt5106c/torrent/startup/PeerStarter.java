@@ -92,15 +92,25 @@ public class PeerStarter
         Runtime.getRuntime().exec("chmod 777 " + fileName);
         // See if all transfer done
         String output = "";        
+		String fatalError = "";
         String hosts = Integer.toString(peerInfoMap.size()-1);	// one peer already has the file
         while (true)
         {  
+			// see if download done
             Process process = Runtime.getRuntime().exec(new String[] {"/bin/bash", "-c", "grep complete *.log | wc -l"});
 			process.waitFor();
 			BufferedReader brdr = new BufferedReader(new InputStreamReader(process.getInputStream()));
             output = brdr.readLine();
+
+			// see if fatal error has occured
+            process = Runtime.getRuntime().exec(new String[] {"/bin/bash", "-c", "grep FATAL_ERROR *.log"});
+			process.waitFor();
+			brdr = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            fatalError = brdr.readLine();
+
+			//System.out.println("Fatal error : " + fatalError);
             //System.out.println(output); 	//--> checks how many files downloaded
-        	if (output != null && output.compareTo(hosts) == 0)
+			if (fatalError != null || (output != null && output.compareTo(hosts) == 0))
         	{
         		// Do the cleanup
         		Runtime.getRuntime().exec("./XferDone.sh");
