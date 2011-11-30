@@ -3,14 +3,16 @@ package cnt5106c.torrent.peer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentSkipListSet;
+
+import org.apache.log4j.Logger;
 
 import cnt5106c.torrent.config.CommonConfig;
 import cnt5106c.torrent.transceiver.Transceiver;
@@ -31,6 +33,7 @@ public class TorrentFile
     private final int totalPiecesRequired;
     private byte[] finalBitmap;
     private Transceiver myTransceiver;
+    private static Logger debugLogger = Logger.getLogger("A");
     
     public TorrentFile(int myPeerID, CommonConfig myCommonConfig, Set<Integer> peerConfigIDs, 
             boolean doIHaveFile, Transceiver myTransceiver) throws IOException
@@ -119,12 +122,23 @@ public class TorrentFile
             this.updateBitmapWithPiece(myFileBitmap, pieceID);
             this.peerIdToPieceDownloadCount.get(myPeerID).addAndGet(1);   
         }
+        printBitmap();
         
         if(canIQuit())
         {
             //signal Transceiver which will make every thread quit.
             this.myTransceiver.signalQuit();
         }
+    }
+
+    private void printBitmap()
+    {
+        StringBuilder sb = new StringBuilder("Peer " + myPeerID + ": Bitmap Info--");
+        for(Integer peerID : this.peerIdToPieceBitmap.keySet())
+        {
+            sb.append(peerID + ": " + this.peerIdToPieceBitmap.get(peerID)[0] + "\n");
+        }
+        debugLogger.debug(sb.toString());
     }
 
     public byte[] getMyFileBitmap()
@@ -150,6 +164,7 @@ public class TorrentFile
             updateBitmapWithPiece(peerFileBitmap, pieceIndex);
             this.peerIdToPieceDownloadCount.get(peerID).addAndGet(1);
         }
+        printBitmap();
         
         if(canIQuit())
         {
@@ -232,7 +247,7 @@ public class TorrentFile
         return this.peerIdToPieceBitmap.get(peerID);
     }
     
-    public void setPeerBitmap(int peerID, byte[] bitmap)
+    public synchronized void setPeerBitmap(int peerID, byte[] bitmap)
     {
         this.peerIdToPieceBitmap.put(peerID, bitmap);
     }

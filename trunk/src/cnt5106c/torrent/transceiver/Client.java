@@ -35,15 +35,28 @@ public class Client implements Runnable
      * @throws SocketTimeoutException if server couldn't not be contacted within specified time, default = 5 seconds
      * @throws IOException
      */
-	public Client(String serverAddress, int serverPort, Transceiver myTransceiver) throws SocketTimeoutException, IOException
+	public Client(String serverAddress, int serverPort, Transceiver myTransceiver) //throws SocketTimeoutException, IOException
 	{
 	    this.serverAddress = serverAddress;
 	    this.serverPort = serverPort;
 	    
 	    this.me = new Socket();
-	    this.me.connect(new InetSocketAddress(this.serverAddress, this.serverPort), TIMEOUT);
-	    this.dos = new DataOutputStream(me.getOutputStream());
-        this.dis = new DataInputStream(me.getInputStream());
+	    while(true)
+	    {
+    	    try
+            {
+                this.me.connect(new InetSocketAddress(this.serverAddress, this.serverPort), TIMEOUT);
+            
+        	    this.dos = new DataOutputStream(me.getOutputStream());
+                this.dis = new DataInputStream(me.getInputStream());
+                break;
+            }
+    	    catch (IOException e)
+            {
+                //myTransceiver.logMessage("Connection to Port " + this.serverPort + " failed from " + this.me.getPort(), e);
+    	        try{Thread.sleep(500);} catch (InterruptedException e1){/*ignore*/}
+            }
+	    }
         this.myTransceiver = myTransceiver;
         System.out.println("Client: connected to server now...");
 	}
@@ -78,7 +91,7 @@ public class Client implements Runnable
 	    pipedOutputStream.flush();
 	}
 	
-	void receive(int preknownDataLength) throws EOFException, IOException
+	synchronized void receive(int preknownDataLength) throws EOFException, IOException
 	{
 	    byte[] buffer = new byte[preknownDataLength];
 	    //using read fully here to completely download the data before placing it in buffer
