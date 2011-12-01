@@ -84,6 +84,7 @@ public class FileHandler
         	buffer = new byte[myPieceSize];
         //debugLogger.warn("Piece ID = " + pieceID + " remainingBytes = " + remainingBytes + " file size = " + raf.length() + " position = " + pieceID*myPieceSize);
         raf.read(buffer);
+        raf.close();
         return buffer;
     }
 
