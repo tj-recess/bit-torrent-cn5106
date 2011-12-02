@@ -36,6 +36,7 @@ public class EventManager implements Runnable
     private final String debugHeader;
     private long downloadStartTime;
     private long downloadStopTime;
+    private volatile boolean requestSenderStarted = false;
     
     public EventManager(Client aClient, Transceiver myTransceiver) throws IOException
     {
@@ -266,12 +267,19 @@ public class EventManager implements Runnable
     	myTransceiver.logMessage("Peer " + myOwnID + " is unchoked by " + myPeersID);
         //first of all set the status that I am now unchoked
         this.amIchoked = false;
-        //select any piece which my peer has but I don't have and I have not already requested
-        int pieceIndex = myTorrentFile.getRequiredPieceIndexFromPeer(myPeersID);
-        if(pieceIndex != -1)
+        
+        if(!requestSenderStarted)
         {
-            myClient.send((new RequestMessage(pieceIndex)).getBytes());
+            (new Thread(new RequestMessageManager())).start();
+            this.requestSenderStarted  = true;
         }
+        
+//        //select any piece which my peer has but I don't have and I have not already requested
+//        int pieceIndex = myTorrentFile.getRequiredPieceIndexFromPeer(myPeersID);
+//        if(pieceIndex != -1)
+//        {
+//            myClient.send((new RequestMessage(pieceIndex)).getBytes());
+//        }
     }
 
     private void takeActionForChokeMessage()
@@ -319,5 +327,36 @@ public class EventManager implements Runnable
         byte[] msgType = new byte[1];
         dis.readFully(msgType);
         return new ActualMessage(msgLength, MessageType.getMessageType(msgType[0]));
+    }
+
+    class RequestMessageManager implements Runnable
+    {
+        private void sendRequestMessage() throws IOException, InterruptedException
+        {
+            //send request for another piece
+            int desiredPiece = myTorrentFile.getRequiredPieceIndexFromPeer(myPeersID);
+            if(desiredPiece != -1)
+            {
+                myClient.send((new RequestMessage(desiredPiece)).getBytes());
+            }
+        }
+
+        @Override
+        public void run()
+        {
+            while(! myTorrentFile.canIQuit())
+            try
+            {
+                this.sendRequestMessage();
+            } catch (IOException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (InterruptedException e)
+            {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
     }
 }
