@@ -345,9 +345,11 @@ public class EventManager implements Runnable
         public void run()
         {
             while(! myTorrentFile.canIQuit())
+			{
             try
             {
                 this.sendRequestMessage();
+				Thread.sleep(5);
             } catch (IOException e)
             {
                 // TODO Auto-generated catch block
@@ -357,6 +359,7 @@ public class EventManager implements Runnable
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+			}
         }
     }
 }
